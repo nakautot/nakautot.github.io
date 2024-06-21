@@ -1,0 +1,18 @@
+BEGIN:VCARD
+VERSION:3.0
+PRODID:-//QR-Code-Generator.com//EN
+N:Panuncillo;Joseph;;;
+FN:Joseph Panuncillo
+ORG:;
+TITLE:Software Engineer
+EMAIL;TYPE=PREF,INTERNET:jpanuncillo@live.com
+TEL;TYPE=CELL,voice:+639089689553
+TEL;TYPE=WORK,voice:
+TEL;TYPE=WORK,fax:
+ADR;TYPE=WORK;type=pref:;; ;LAPU-LAPU CITY (OPON);Cebu;6015;Philippines
+URL:https://github.com/nakautot
+
+NOTE:
+
+REV:2008-04-24T19:52:43Z
+END:VCARD
