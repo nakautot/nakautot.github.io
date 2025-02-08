@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infant Feeding Log</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            M.Tabs.init(document.querySelectorAll('.tabs'));
+            M.FormSelect.init(document.querySelectorAll('select'));
+            loadLogs();
+        });
+
+        function loadLogs() {
+            const logs = JSON.parse(localStorage.getItem('feedingLogs')) || [];
+            const tbody = document.getElementById("logs-body");
+            tbody.innerHTML = "";
+            logs.forEach((log, index) => {
+                const row = `<tr>
+                    <td>${log.startTime}</td>
+                    <td>${log.endTime}</td>
+                    <td>${log.feedingType}</td>
+                    <td>${log.quantity}</td>
+                    <td>${log.hasPoop ? 'Yes' : 'No'}</td>
+                    <td>${log.hasPee ? 'Yes' : 'No'}</td>
+                    <td>${log.breastSide}</td>
+                    <td>${log.notes}</td>
+                    <td><button class="btn red" onclick="deleteLog(${index})">Delete</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function saveLog() {
+            const logs = JSON.parse(localStorage.getItem('feedingLogs')) || [];
+            const log = {
+                startTime: document.getElementById("start-time").value,
+                endTime: document.getElementById("end-time").value,
+                feedingType: document.querySelector('input[name="feeding-type"]:checked').value,
+                quantity: document.getElementById("quantity").value,
+                hasPoop: document.getElementById("has-poop").checked,
+                hasPee: document.getElementById("has-pee").checked,
+                breastSide: document.querySelector('input[name="breast-side"]:checked').value,
+                notes: document.getElementById("notes").value,
+            };
+            logs.push(log);
+            localStorage.setItem('feedingLogs', JSON.stringify(logs));
+            loadLogs();
+        }
+    </script>
+</head>
+<body class="container">
+    <h1>Infant Feeding Log</h1>
+    
+    <ul class="tabs">
+        <li class="tab col s6"><a href="#add-log">Add New Log</a></li>
+        <li class="tab col s6"><a href="#logs">Logs</a></li>
+    </ul>
+    
+    <div id="add-log" class="card-panel">
+        <h2>Add New Log</h2>
+        <div class="row">
+            <div class="input-field col s4">
+                <input type="time" id="start-time">
+                <label for="start-time">Start Time</label>
+            </div>
+            <div class="input-field col s4">
+                <input type="time" id="end-time">
+                <label for="end-time">End Time</label>
+            </div>
+            <div class="input-field col s4">
+                <input type="number" id="quantity">
+                <label for="quantity">Quantity</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col s6">
+                <label>Feeding Type</label>
+                <p>
+                    <label>
+                        <input name="feeding-type" type="radio" value="Breast" checked />
+                        <span>Breast</span>
+                    </label>
+                    <label>
+                        <input name="feeding-type" type="radio" value="Bottle" />
+                        <span>Bottle</span>
+                    </label>
+                </p>
+            </div>
+            <div class="col s6">
+                <label>Breast Started With</label>
+                <p>
+                    <label>
+                        <input name="breast-side" type="radio" value="Left" checked />
+                        <span>Left</span>
+                    </label>
+                    <label>
+                        <input name="breast-side" type="radio" value="Right" />
+                        <span>Right</span>
+                    </label>
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col s6">
+                <label>
+                    <input type="checkbox" id="has-poop">
+                    <span>Has Poop</span>
+                </label>
+            </div>
+            <div class="col s6">
+                <label>
+                    <input type="checkbox" id="has-pee">
+                    <span>Has Pee</span>
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="input-field col s12">
+                <textarea id="notes" class="materialize-textarea"></textarea>
+                <label for="notes">Notes</label>
+            </div>
+        </div>
+        <button class="btn" onclick="saveLog()">Save Log</button>
+    </div>
+    
+    <div id="logs" class="card-panel">
+        <h2>Logs</h2>
+        <button class="btn green" onclick="exportLogs()">Export to CSV</button>
+        <input type="file" accept=".csv" onchange="importLogs(event)">
+        <table class="striped" style="width: 100%">
+            <thead>
+                <tr>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Feeding Type</th>
+                    <th>Quantity</th>
+                    <th>Has Poop</th>
+                    <th>Has Pee</th>
+                    <th>Breast Side</th>
+                    <th>Notes</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="logs-body"></tbody>
+        </table>
+    </div>
+</body>
+</html>
