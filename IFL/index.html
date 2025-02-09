@@ -52,6 +52,21 @@
             localStorage.setItem('feedingLogs', JSON.stringify(logs));
             loadLogs();
         }
+
+        function exportLogs() {
+            const logs = JSON.parse(localStorage.getItem('feedingLogs')) || [];
+            let csvContent = "data:text/csv;charset=utf-8,Start Time,End Time,Feeding Type,Quantity,Has Poop,Has Pee,Breast Side,Notes\n";
+            logs.forEach(log => {
+                csvContent += `${log.startTime},${log.endTime},${log.feedingType},${log.quantity},${log.hasPoop ? 'Yes' : 'No'},${log.hasPee ? 'Yes' : 'No'},${log.breastSide},"${log.notes.replace(/"/g, '""')}"\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "feeding_logs.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     </script>
 </head>
 <body class="container">
