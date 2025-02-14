@@ -3,167 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infant Feeding Log</title>
+    <title>PWA with Material UI</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
+    <script defer src="script.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+    <div class="container center-align">
+        <div class="card-panel">
+            <div class="row">
+                <div class="col s3">
+                    <button class="btn-large waves-effect waves-light blue" onclick="addRow('opacity')"><i class="material-icons">opacity</i></button>
+                </div>
+                <div class="col s3">
+                    <button class="btn-large waves-effect waves-light blue" onclick="addRow('free_breakfast')"><i class="material-icons">free_breakfast</i></button>
+                </div>
+                <div class="col s3">
+                    <button class="btn-large waves-effect waves-light blue" onclick="addRow('baby_changing_station')"><i class="material-icons">baby_changing_station</i></button>
+                </div>
+                <div class="col s3">
+                    <button class="btn-large waves-effect waves-light blue" onclick="addRow('cloud')"><i class="material-icons">cloud</i></button>
+                </div>
+            </div>
+        </div>
+        <div class="card-panel">
+            <table class="highlight centered" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="min-width: 5%;">Icon</th>
+                        <th style="width: auto;">Data</th>
+                        <th style="min-width: 10%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="data-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Modal Structure -->
+    <div id="notes-modal" class="modal">
+        <div class="modal-content">
+            <h4>Edit Notes</h4>
+            <textarea id="notes-textarea" class="materialize-textarea"></textarea>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat" onclick="saveNotes()">Save</a>
+        </div>
+    </div>
+
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            M.Tabs.init(document.querySelectorAll('.tabs'));
-            M.FormSelect.init(document.querySelectorAll('select'));
-            loadLogs();
+        document.addEventListener("DOMContentLoaded", function() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register("service-worker.js")
+                    .then(function(registration) {
+                        console.log("Service Worker registered with scope:", registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log("Service Worker registration failed:", error);
+                    });
+            }
+            M.Modal.init(document.querySelectorAll('.modal'));
+            loadTableData();
         });
 
-        function loadLogs() {
-            const logs = JSON.parse(localStorage.getItem('feedingLogs')) || [];
-            const tbody = document.getElementById("logs-body");
-            tbody.innerHTML = "";
-            logs.forEach((log, index) => {
-                const row = `<tr>
-                    <td>${log.startTime}</td>
-                    <td>${log.endTime}</td>
-                    <td>${log.feedingType}</td>
-                    <td>${log.quantity}</td>
-                    <td>${log.hasPoop ? 'Yes' : 'No'}</td>
-                    <td>${log.hasPee ? 'Yes' : 'No'}</td>
-                    <td>${log.breastSide}</td>
-                    <td>${log.notes}</td>
-                    <td><button class="btn red" onclick="deleteLog(${index})">Delete</button></td>
-                </tr>`;
-                tbody.innerHTML += row;
-            });
+        let currentEditingRow = null;
+
+        function saveTableData() {
+            const tableBody = document.getElementById("data-table-body").innerHTML;
+            localStorage.setItem("tableData", tableBody);
         }
 
-        function saveLog() {
-            const logs = JSON.parse(localStorage.getItem('feedingLogs')) || [];
-            const log = {
-                startTime: document.getElementById("start-time").value,
-                endTime: document.getElementById("end-time").value,
-                feedingType: document.querySelector('input[name="feeding-type"]:checked').value,
-                quantity: document.getElementById("quantity").value,
-                hasPoop: document.getElementById("has-poop").checked,
-                hasPee: document.getElementById("has-pee").checked,
-                breastSide: document.querySelector('input[name="breast-side"]:checked').value,
-                notes: document.getElementById("notes").value,
-            };
-            logs.push(log);
-            localStorage.setItem('feedingLogs', JSON.stringify(logs));
-            loadLogs();
+        function loadTableData() {
+            const savedData = localStorage.getItem("tableData");
+            if (savedData) {
+                document.getElementById("data-table-body").innerHTML = savedData;
+            }
         }
 
-        function exportLogs() {
-            const logs = JSON.parse(localStorage.getItem('feedingLogs')) || [];
-            let csvContent = "data:text/csv;charset=utf-8,Start Time,End Time,Feeding Type,Quantity,Has Poop,Has Pee,Breast Side,Notes\n";
-            logs.forEach(log => {
-                csvContent += `${log.startTime},${log.endTime},${log.feedingType},${log.quantity},${log.hasPoop ? 'Yes' : 'No'},${log.hasPee ? 'Yes' : 'No'},${log.breastSide},"${log.notes.replace(/"/g, '""')}"\n`;
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "feeding_logs.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        function addRow(iconType) {
+            const tableBody = document.getElementById("data-table-body");
+            const row = document.createElement("tr");
+            
+            let dataContent = "";
+            let actionButtons = "";
+            
+            if (iconType === "opacity" || iconType === "free_breakfast" || iconType === "cloud") {
+                dataContent = `<span>Time Started: ${new Date().toLocaleTimeString()}</span><br>
+                               <span class='time-ended'>Time Ended: </span><br>
+                               <span class='notes'>Notes: </span>`;
+                actionButtons = `
+                    <button class="btn-small red" onclick="confirmDelete(this)"><i class="material-icons">delete</i></button>
+                    <button class="btn-small blue" onclick="stopTime(this)"><i class="material-icons">stop</i></button>
+                    <button class="btn-small green" onclick="editNotes(this)"><i class="material-icons">notes</i></button>`;
+            } else if (iconType === "baby_changing_station") {
+                dataContent = `<span>Time: ${new Date().toLocaleTimeString()}</span><br>
+                               <span class='pee-status'>Has Pee: </span><br>
+                               <span class='poop-status'>Has Poop: </span>`;
+                actionButtons = `
+                    <button class="btn-small red" onclick="confirmDelete(this)"><i class="material-icons">delete</i></button>
+                    <button class="btn-small yellow" onclick="togglePee(this)"><i class="material-icons">water</i></button>
+                    <button class="btn-small brown" onclick="togglePoop(this)"><i class="material-icons">foggy</i></button>`;
+            }
+            
+            row.innerHTML = `
+                <td><i class="material-icons">${iconType}</i></td>
+                <td>${dataContent}</td>
+                <td>${actionButtons}</td>
+            `;
+            
+            tableBody.prepend(row);
+            saveTableData();
+        }
+
+        function confirmDelete(button) {
+            if (confirm("Are you sure you want to delete this row?")) {
+                deleteRow(button);
+            }
+        }
+
+        function stopTime(button) {
+            const row = button.closest("tr");
+            const timeEndedSpan = row.querySelector(".time-ended");
+            if (timeEndedSpan) {
+                timeEndedSpan.textContent = "Time Ended: " + new Date().toLocaleTimeString();
+            }
+            saveTableData();
+        }
+
+        function deleteRow(button) {
+            const row = button.closest("tr");
+            row.remove();
+            saveTableData();
+        }
+
+        function editNotes(button) {
+            currentEditingRow = button.closest("tr");
+            const notesSpan = currentEditingRow.querySelector(".notes");
+            document.getElementById("notes-textarea").value = notesSpan.textContent.replace("Notes: ", "");
+            M.Modal.getInstance(document.getElementById("notes-modal")).open();
+        }
+
+        function saveNotes() {
+            if (currentEditingRow) {
+                const notesSpan = currentEditingRow.querySelector(".notes");
+                notesSpan.textContent = "Notes: " + document.getElementById("notes-textarea").value;
+            }
+            saveTableData();
         }
     </script>
-</head>
-<body class="container">
-    <h1>Infant Feeding Log</h1>
-    
-    <ul class="tabs">
-        <li class="tab col s6"><a href="#add-log">Add New Log</a></li>
-        <li class="tab col s6"><a href="#logs">Logs</a></li>
-    </ul>
-    
-    <div id="add-log" class="card-panel">
-        <h2>Add New Log</h2>
-        <div class="row">
-            <div class="input-field col s4">
-                <input type="time" id="start-time">
-                <label for="start-time">Start Time</label>
-            </div>
-            <div class="input-field col s4">
-                <input type="time" id="end-time">
-                <label for="end-time">End Time</label>
-            </div>
-            <div class="input-field col s4">
-                <input type="number" id="quantity">
-                <label for="quantity">Quantity</label>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col s6">
-                <label>Feeding Type</label>
-                <p>
-                    <label>
-                        <input name="feeding-type" type="radio" value="Breast" checked />
-                        <span>Breast</span>
-                    </label>
-                    <label>
-                        <input name="feeding-type" type="radio" value="Bottle" />
-                        <span>Bottle</span>
-                    </label>
-                </p>
-            </div>
-            <div class="col s6">
-                <label>Breast Started With</label>
-                <p>
-                    <label>
-                        <input name="breast-side" type="radio" value="Left" checked />
-                        <span>Left</span>
-                    </label>
-                    <label>
-                        <input name="breast-side" type="radio" value="Right" />
-                        <span>Right</span>
-                    </label>
-                </p>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col s6">
-                <label>
-                    <input type="checkbox" id="has-poop">
-                    <span>Has Poop</span>
-                </label>
-            </div>
-            <div class="col s6">
-                <label>
-                    <input type="checkbox" id="has-pee">
-                    <span>Has Pee</span>
-                </label>
-            </div>
-        </div>
-        <div class="row">
-            <div class="input-field col s12">
-                <textarea id="notes" class="materialize-textarea"></textarea>
-                <label for="notes">Notes</label>
-            </div>
-        </div>
-        <button class="btn" onclick="saveLog()">Save Log</button>
-    </div>
-    
-    <div id="logs" class="card-panel">
-        <h2>Logs</h2>
-        <button class="btn green" onclick="exportLogs()">Export to CSV</button>
-        <input type="file" accept=".csv" onchange="importLogs(event)">
-        <table class="striped" style="width: 100%">
-            <thead>
-                <tr>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Feeding Type</th>
-                    <th>Quantity</th>
-                    <th>Has Poop</th>
-                    <th>Has Pee</th>
-                    <th>Breast Side</th>
-                    <th>Notes</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="logs-body"></tbody>
-        </table>
-    </div>
 </body>
 </html>
