@@ -118,39 +118,17 @@
             saveTableData();
         }
 
-        function confirmDelete(button) {
-            if (confirm("Are you sure you want to delete this row?")) {
-                deleteRow(button);
-            }
-        }
-
-        function stopTime(button) {
+        function togglePee(button) {
             const row = button.closest("tr");
-            const timeEndedSpan = row.querySelector(".time-ended");
-            if (timeEndedSpan) {
-                timeEndedSpan.textContent = "Time Ended: " + new Date().toLocaleTimeString();
-            }
+            const peeStatus = row.querySelector(".pee-status");
+            peeStatus.textContent = peeStatus.textContent.includes("Yes") ? "Has Pee: " : "Has Pee: Yes";
             saveTableData();
         }
 
-        function deleteRow(button) {
+        function togglePoop(button) {
             const row = button.closest("tr");
-            row.remove();
-            saveTableData();
-        }
-
-        function editNotes(button) {
-            currentEditingRow = button.closest("tr");
-            const notesSpan = currentEditingRow.querySelector(".notes");
-            document.getElementById("notes-textarea").value = notesSpan.textContent.replace("Notes: ", "");
-            M.Modal.getInstance(document.getElementById("notes-modal")).open();
-        }
-
-        function saveNotes() {
-            if (currentEditingRow) {
-                const notesSpan = currentEditingRow.querySelector(".notes");
-                notesSpan.textContent = "Notes: " + document.getElementById("notes-textarea").value;
-            }
+            const poopStatus = row.querySelector(".poop-status");
+            poopStatus.textContent = poopStatus.textContent.includes("Yes") ? "Has Poop: " : "Has Poop: Yes";
             saveTableData();
         }
     </script>
