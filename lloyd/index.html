@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sticky Control Panel Layout</title>
+  <script type="module">
+    import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/shoelace.js';
+  </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/themes/light.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
+      background-color: #f0f2f5;
+    }
+
+    #app {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 300px;
+      background: white;
+      box-shadow: var(--sl-shadow-medium);
+      overflow-y: auto;
+      transition: width 0.3s;
+    }
+
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      min-height: 0;
+    }
+
+    .section {
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border-radius: var(--sl-border-radius-large);
+      box-shadow: var(--sl-shadow-medium);
+    }
+
+    #telemetry {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    #control-panel {
+      flex-shrink: 0;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    .feature-toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    sl-switch.control-toggle::part(control) {
+      --sl-color-primary: #28a745;
+    }
+
+    sl-switch.telemetry-toggle::part(control) {
+      --sl-color-primary: #007bff;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div style="padding: 1rem; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+      <strong>Controls</strong>
+      <sl-button size="small" onclick="toggleSidebar()">Toggle</sl-button>
+    </div>
+    <div style="padding: 1rem;">
+      <div class="grid">
+        <div class="feature-toggle-group">  
+  <sl-switch size="small" class="control-toggle" id="toggle-systemcontrol-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-systemcontrol-telemetry" checked></sl-switch>
+  <strong>SystemControl</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" id="toggle-motorcontrol-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-motorcontrol-telemetry" checked></sl-switch>
+  <strong>MotorControl</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-systemerrorflags-telemetry" checked></sl-switch>
+  <strong>SystemErrorFlags</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-systemwarningflags-telemetry" checked></sl-switch>
+  <strong>SystemWarningFlags</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" id="toggle-runningrpm-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-runningrpm-telemetry" checked></sl-switch>
+  <strong>RunningRPM</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-dcinputvoltage-telemetry" checked></sl-switch>
+  <strong>DCInputVoltage</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-dcinputcurrent-telemetry" checked></sl-switch>
+  <strong>DCInputCurrent</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-motorcoilcurrentrms-telemetry" checked></sl-switch>
+  <strong>MotorCoilCurrentRMS</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" id="toggle-startpressure-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-startpressure-telemetry" checked></sl-switch>
+  <strong>StartPressure</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" id="toggle-stoppressure-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-stoppressure-telemetry" checked></sl-switch>
+  <strong>StopPressure</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-tankpressure-telemetry" checked></sl-switch>
+  <strong>TankPressure</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" id="toggle-date-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-date-telemetry" checked></sl-switch>
+  <strong>Date</strong>
+</div>
+<div class="feature-toggle-group">  
+  <sl-switch size="small" class="control-toggle" id="toggle-time-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-time-telemetry" checked></sl-switch>
+  <strong>Time</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-compressorruntimeondate-telemetry" checked></sl-switch>
+  <strong>CompressorRunTimeOnDate</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-compressorruntimeontime-telemetry" checked></sl-switch>
+  <strong>CompressorRunTimeOnTime</strong>
+</div>
+<div class="feature-toggle-group">    
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-compressorruntimedate-telemetry" checked></sl-switch>
+  <strong>CompressorRunTimeDate</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-compressorruntimetime-telemetry" checked></sl-switch>
+  <strong>CompressorRunTimeTime</strong>
+</div>
+<div class="feature-toggle-group">    
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-compressorduty-telemetry" checked></sl-switch>
+  <strong>CompressorDuty</strong>
+</div>
+<div class="feature-toggle-group">  
+  <sl-switch size="small" class="control-toggle" id="toggle-singledutyalarm-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-singledutyalarm-telemetry" checked></sl-switch>
+  <strong>SingleDutyAlarm</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" id="toggle-averagedutyalarm-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-averagedutyalarm-telemetry" checked></sl-switch>
+  <strong>AverageDutyAlarm</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" id="toggle-compressorcycletimeset-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-compressorcycletimeset-telemetry" checked></sl-switch>
+  <strong>CompressorCycleTimeSet</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" id="toggle-pressurecontrolmethodset-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-pressurecontrolmethodset-telemetry" checked></sl-switch>
+  <strong>PressureControlMethodSet</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" disabled></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-motorturns-telemetry" checked></sl-switch>
+  <strong>MotorTurns</strong>
+</div>
+<div class="feature-toggle-group">
+  <sl-switch size="small" class="control-toggle" id="toggle-systemoffstatus-control" checked></sl-switch>
+  <sl-switch size="small" class="telemetry-toggle" id="toggle-systemoffstatus-telemetry" checked></sl-switch>
+  <strong>SystemOffStatus</strong>
+</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div id="main">
+    <div id="telemetry" class="section">
+      <h2>Staging - Real-Time Telemetry</h2>
+      <div class="grid" id="telemetry-cards">
+        <sl-card id="telemetry-systemcontrol">
+  <strong slot="header">SystemControl Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-motorcontrol">
+  <strong slot="header">MotorControl Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-systemerrorflags">
+  <strong slot="header">SystemErrorFlags Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-systemwarningflags">
+  <strong slot="header">SystemWarningFlags Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-runningrpm">
+  <strong slot="header">RunningRPM Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-dcinputvoltage">
+  <strong slot="header">DCInputVoltage Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-dcinputcurrent">
+  <strong slot="header">DCInputCurrent Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-motorcoilcurrentrms">
+  <strong slot="header">MotorCoilCurrentRMS Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-startpressure">
+  <strong slot="header">StartPressure Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-stoppressure">
+  <strong slot="header">StopPressure Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-tankpressure">
+  <strong slot="header">TankPressure Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-date">
+  <strong slot="header">Date Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-time">
+  <strong slot="header">Time Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-compressorruntimeondate">
+  <strong slot="header">CompressorRunTimeOnDate Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-compressorruntimeontime">
+  <strong slot="header">CompressorRunTimeOnTime Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-compressorruntimedate">
+  <strong slot="header">CompressorRunTimeDate Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-compressorruntimetime">
+  <strong slot="header">CompressorRunTimeTime Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-compressorduty">
+  <strong slot="header">CompressorDuty Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-singledutyalarm">
+  <strong slot="header">SingleDutyAlarm Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-averagedutyalarm">
+  <strong slot="header">AverageDutyAlarm Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-compressorcycletimeset">
+  <strong slot="header">CompressorCycleTimeSet Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-pressurecontrolmethodset">
+  <strong slot="header">PressureControlMethodSet Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-motorturns">
+  <strong slot="header">MotorTurns Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+<sl-card id="telemetry-systemoffstatus">
+  <strong slot="header">SystemOffStatus Telemetry</strong>
+  <p>Slave 1: [value]</p>
+  <p>Slave 2: [value]</p>
+</sl-card>
+      </div>
+    </div>
+
+    <div id="control-panel" class="section">
+      <h2>
+        Slave Control Panel
+        <sl-dropdown>
+          <sl-button slot="trigger" caret>Send</sl-button>
+          <sl-menu>
+            <sl-menu-item>Slave 1</sl-menu-item>
+            <sl-menu-item>Slave 2</sl-menu-item>
+          </sl-menu>
+        </sl-dropdown>
+      </h2>
+      <div class="grid" id="control-inputs">
+        <sl-input id="input-systemcontrol" label="SystemControl Control Input" type="text"></sl-input>
+<sl-input id="input-motorcontrol" label="MotorControl Control Input" type="text"></sl-input>
+<sl-input id="input-runningrpm" label="RunningRPM Control Input" type="text"></sl-input>
+<sl-input id="input-startpressure" label="StartPressure Control Input" type="text"></sl-input>
+<sl-input id="input-stoppressure" label="StopPressure Control Input" type="text"></sl-input>
+<sl-input id="input-date" label="Date Control Input" type="text"></sl-input>
+<sl-input id="input-time" label="Time Control Input" type="text"></sl-input>
+<sl-input id="input-singledutyalarm" label="SingleDutyAlarm Control Input" type="text"></sl-input>
+<sl-input id="input-averagedutyalarm" label="AverageDutyAlarm Control Input" type="text"></sl-input>
+<sl-input id="input-compressorcycletimeset" label="CompressorCycleTimeSet Control Input" type="text"></sl-input>
+<sl-input id="input-pressurecontrolmethodset" label="PressureControlMethodSet Control Input" type="text"></sl-input>
+<sl-input id="input-systemoffstatus" label="SystemOffStatus Control Input" type="text"></sl-input>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.style.width = sidebar.style.width === '0px' ? '300px' : '0px';
+  }
+</script>
+
+<script type="module">
+  const config = [
+  { controlToggle: "toggle-systemcontrol-control", inputId: "input-systemcontrol", telemetryToggle: "toggle-systemcontrol-telemetry", telemetryId: "telemetry-systemcontrol" },
+  { controlToggle: "toggle-motorcontrol-control", inputId: "input-motorcontrol", telemetryToggle: "toggle-motorcontrol-telemetry", telemetryId: "telemetry-motorcontrol" },
+  { telemetryToggle: "toggle-systemerrorflags-telemetry", telemetryId: "telemetry-systemerrorflags" },
+  { telemetryToggle: "toggle-systemwarningflags-telemetry", telemetryId: "telemetry-systemwarningflags" },
+  { controlToggle: "toggle-runningrpm-control", inputId: "input-runningrpm", telemetryToggle: "toggle-runningrpm-telemetry", telemetryId: "telemetry-runningrpm" },
+  { telemetryToggle: "toggle-dcinputvoltage-telemetry", telemetryId: "telemetry-dcinputvoltage" },
+  { telemetryToggle: "toggle-dcinputcurrent-telemetry", telemetryId: "telemetry-dcinputcurrent" },
+  { telemetryToggle: "toggle-motorcoilcurrentrms-telemetry", telemetryId: "telemetry-motorcoilcurrentrms" },
+  { controlToggle: "toggle-startpressure-control", inputId: "input-startpressure", telemetryToggle: "toggle-startpressure-telemetry", telemetryId: "telemetry-startpressure" },
+  { controlToggle: "toggle-stoppressure-control", inputId: "input-stoppressure", telemetryToggle: "toggle-stoppressure-telemetry", telemetryId: "telemetry-stoppressure" },
+  { telemetryToggle: "toggle-tankpressure-telemetry", telemetryId: "telemetry-tankpressure" },
+  { controlToggle: "toggle-date-control", inputId: "input-date", telemetryToggle: "toggle-date-telemetry", telemetryId: "telemetry-date" },
+  { controlToggle: "toggle-time-control", inputId: "input-time", telemetryToggle: "toggle-time-telemetry", telemetryId: "telemetry-time" },
+  { telemetryToggle: "toggle-compressorruntimeondate-telemetry", telemetryId: "telemetry-compressorruntimeondate" },
+  { telemetryToggle: "toggle-compressorruntimeontime-telemetry", telemetryId: "telemetry-compressorruntimeontime" },
+  { telemetryToggle: "toggle-compressorruntimedate-telemetry", telemetryId: "telemetry-compressorruntimedate" },
+  { telemetryToggle: "toggle-compressorruntimetime-telemetry", telemetryId: "telemetry-compressorruntimetime" },
+  { telemetryToggle: "toggle-compressorduty-telemetry", telemetryId: "telemetry-compressorduty" },
+  { controlToggle: "toggle-singledutyalarm-control", inputId: "input-singledutyalarm", telemetryToggle: "toggle-singledutyalarm-telemetry", telemetryId: "telemetry-singledutyalarm" },
+  { controlToggle: "toggle-averagedutyalarm-control", inputId: "input-averagedutyalarm", telemetryToggle: "toggle-averagedutyalarm-telemetry", telemetryId: "telemetry-averagedutyalarm" },
+  { controlToggle: "toggle-compressorcycletimeset-control", inputId: "input-compressorcycletimeset", telemetryToggle: "toggle-compressorcycletimeset-telemetry", telemetryId: "telemetry-compressorcycletimeset" },
+  { controlToggle: "toggle-pressurecontrolmethodset-control", inputId: "input-pressurecontrolmethodset", telemetryToggle: "toggle-pressurecontrolmethodset-telemetry", telemetryId: "telemetry-pressurecontrolmethodset" },
+  { telemetryToggle: "toggle-motorturns-telemetry", telemetryId: "telemetry-motorturns" },
+  { controlToggle: "toggle-systemoffstatus-control", inputId: "input-systemoffstatus", telemetryToggle: "toggle-systemoffstatus-telemetry", telemetryId: "telemetry-systemoffstatus" }
+];
+
+  const updateFeatureVisibility = () => {
+    for (const feature of config) {
+      if (feature.controlToggle && feature.inputId) {
+        const toggle = document.getElementById(feature.controlToggle);
+        const input = document.getElementById(feature.inputId);
+        if (toggle && input) {
+          const update = () => input.style.display = toggle.checked ? '' : 'none';
+          toggle.addEventListener('sl-change', update);
+          update();
+        }
+      }
+      if (feature.telemetryToggle && feature.telemetryId) {
+        const toggle = document.getElementById(feature.telemetryToggle);
+        const telemetry = document.getElementById(feature.telemetryId);
+        if (toggle && telemetry) {
+          const update = () => telemetry.style.display = toggle.checked ? '' : 'none';
+          toggle.addEventListener('sl-change', update);
+          update();
+        }
+      }
+    }
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    customElements.whenDefined('sl-switch').then(updateFeatureVisibility);
+  });
+</script>
+
+</body>
+</html>
