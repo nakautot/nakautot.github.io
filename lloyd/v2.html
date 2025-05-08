@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Sticky Control Panel Layout</title>
+    <script type="module">
+        // Delay rendering until Shoelace is loaded
+        document.documentElement.style.visibility = 'hidden';
+
+        import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/shoelace.js';
+
+        // Wait for a specific component to be defined
+        customElements.whenDefined('sl-drawer').then(() => {
+            document.documentElement.style.visibility = 'visible';
+        });
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/themes/light.css" />
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        sl-carousel {
+            flex: 1;
+            height: 100%;
+            --aspect-ratio: none;
+        }
+
+        sl-carousel-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        sl-card {
+            width: 100%;
+            height: 95%;
+            max-height: 100%;
+            max-width: 100%;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        sl-drawer::part(body),
+        sl-drawer::part(header),
+        sl-drawer::part(footer) {
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: var(--sl-color-neutral-0);
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid var(--sl-color-neutral-200);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        strong {
+            font-size: 1.25rem;
+        }
+    </style>
+
+    <script type="module">
+        class SlaveCard extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+            }
+
+            connectedCallback() {
+                this._render();
+                this._handleControlsUpdated = () => {
+                    this._render(); // Re-render on update
+                    console.log('yes');
+                };
+                window.addEventListener('CONTROLS_UPDATED', this._handleControlsUpdated);
+            }
+
+            disconnectedCallback() {
+                window.removeEventListener('CONTROLS_UPDATED', this._handleControlsUpdated);
+            }
+
+            _render() {
+                const title = this.getAttribute('title') || 'Untitled';
+                const enabled = window.droyd.controls.enabled;
+
+                const toggleHTML = enabled.map(item => `
+      <sl-input label="${item}" type="text"></sl-input>
+    `).join('');
+
+                this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: block;
+          width: 100%;
+          height: 100%;
+        }
+
+        sl-card {
+          width: 100%;
+          height: 95%;
+          max-height: 100%;
+          max-width: 100%;
+          overflow: auto;
+          display: flex;
+          flex-direction: column;
+          padding: 1rem;
+          box-sizing: border-box;
+        }
+      </style>
+
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/themes/light.css" />
+
+      <sl-card>
+        <div slot="header">
+          <strong style="font-size: 1.25rem;">${title}</strong>
+        </div>
+        <div style="flex-grow: 1; margin-top: 1rem;">
+          ${toggleHTML}
+        </div>
+        <sl-button slot="footer" variant="primary">Remove</sl-button>
+      </sl-card>
+    `;
+            }
+        }
+
+        customElements.define('slave-card', SlaveCard);
+    </script>
+
+    <script type="module">
+        class TelemetryToggles extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+            }
+
+            connectedCallback() {
+                const toggleHTML = window.droyd.controls.all.map(item => `
+    <div class="feature-toggle-group">
+      <sl-switch
+        size="small"
+        class="telemetry-toggle"
+        data-item="${item}"
+        id="toggle-${item.toLowerCase().replace(/\s+/g, '-')}-telemetry"
+        ${window.droyd.controls.enabled.includes(item) ? "checked" : ""}
+      ></sl-switch>
+      ${item}
+    </div>
+  `).join('');
+
+                this.shadowRoot.innerHTML = `
+    <style>
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.5rem;
+        padding: 1rem;
+      }
+
+      .feature-toggle-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/themes/light.css" />
+    <div class="grid">${toggleHTML}</div>
+  `;
+
+                // Add listeners to switches
+                this.shadowRoot.querySelectorAll('.telemetry-toggle').forEach(switchEl => {
+                    switchEl.addEventListener('sl-change', event => {
+                        const item = switchEl.getAttribute('data-item');
+                        const isChecked = event.target.checked;
+                        const enabled = window.droyd.controls.enabled;
+
+                        // Update enabled array
+                        if (isChecked && !enabled.includes(item)) {
+                            enabled.push(item);
+                        } else if (!isChecked && enabled.includes(item)) {
+                            const index = enabled.indexOf(item);
+                            if (index > -1) enabled.splice(index, 1);
+                        }
+
+                        // Emit updated event
+                        this.dispatchEvent(new CustomEvent('CONTROLS_UPDATED', {
+                            bubbles: true,
+                            composed: true,
+                            detail: {
+                                message: 'Telemetry toggles updated',
+                                enabledControls: [...enabled]
+                            }
+                        }));
+                    });
+                });
+            }
+        }
+
+        customElements.define('telemetry-toggles', TelemetryToggles);
+    </script>
+
+    <script>
+        window.droyd = {
+            controls: {
+                all: [
+                    'System Control',
+                    'Motor Control',
+                    'Running RPM',
+                    'Start Pressure',
+                    'Stop Pressure',
+                    'Date Control',
+                    'Time Control',
+                    'Single Duty Alarm',
+                    'Average Duty Alarm',
+                    'Compressor Cycle Time Set',
+                    'Pressure Control Method Set',
+                    'System Off Status'
+                ],
+                enabled: [
+                    'Running RPM',
+                    'Start Pressure',
+                    'Stop Pressure',
+                ]
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div id="app">
+        <sl-drawer label="Control Panel Settings" placement="start" class="drawer-placement-start">
+            <div>
+                <div style="padding: 1rem;">
+                    <sl-select id="add-slave-select" placeholder="Add Slave" label="Add Slave">
+                        <sl-option value="COM5">COM5</sl-option>
+                        <sl-option value="COM6">COM6</sl-option>
+                        <sl-option value="COM7">COM7</sl-option>
+                        <sl-option value="COM8">COM8</sl-option>
+                        <sl-option value="COM9">COM9</sl-option>
+                        <sl-option value="COM10">COM10</sl-option>
+                    </sl-select>
+                </div>
+                <telemetry-toggles></telemetry-toggles>
+            </div>
+            <sl-button slot="footer" variant="primary">Close</sl-button>
+        </sl-drawer>
+
+        <header>
+            <div class="header-content">
+                <sl-button id="open-drawer" variant="text">
+                    Company Name - APP Name
+                </sl-button>
+            </div>
+        </header>
+
+        <main>
+            <sl-carousel pagination navigation mouse-dragging loop slides-per-page="3" slides-per-move="1">
+                <sl-carousel-item><slave-card title="COM1"></slave-card></sl-carousel-item>
+                <sl-carousel-item><slave-card title="COM2"></slave-card></sl-carousel-item>
+                <sl-carousel-item><slave-card title="COM3"></slave-card></sl-carousel-item>
+                <sl-carousel-item><slave-card title="COM4"></slave-card></sl-carousel-item>
+            </sl-carousel>
+        </main>
+
+        <script>
+            const drawer = document.querySelector('.drawer-placement-start');
+            const openButton = document.getElementById('open-drawer');
+            const closeButton = drawer.querySelector('sl-button[variant="primary"]');
+
+            openButton.addEventListener('click', () => drawer.show());
+            closeButton.addEventListener('click', () => drawer.hide());
+        </script>
+    </div>
+</body>
+
+</html>
