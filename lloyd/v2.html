@@ -140,6 +140,10 @@
           padding: 1rem;
           box-sizing: border-box;
         }
+
+        sl-button {
+        padding-right: 10px;
+        }
       </style>
 
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/themes/light.css" />
@@ -151,6 +155,8 @@
         <div style="flex-grow: 1; margin-top: 1rem;">
           ${toggleHTML}
         </div>
+        <sl-button slot="footer" variant="primary">Save</sl-button>
+        <sl-button slot="footer" variant="primary">Load</sl-button>
         <sl-button slot="footer" variant="primary">Remove</sl-button>
       </sl-card>
     `;
