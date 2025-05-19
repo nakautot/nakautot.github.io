@@ -7047,7 +7047,7 @@
   :host {
     display: contents;
   }
-`,lt=class extends z{constructor(){super(...arguments),this.hasStarted=!1,this.name="none",this.play=!1,this.delay=0,this.direction="normal",this.duration=1e3,this.easing="linear",this.endDelay=0,this.fill="auto",this.iterations=1/0,this.iterationStart=0,this.playbackRate=1,this.handleAnimationFinish=()=>{this.play=!1,this.hasStarted=!1,this.emit("sl-finish")},this.handleAnimationCancel=()=>{this.play=!1,this.hasStarted=!1,this.emit("sl-cancel")}}get currentTime(){var t,e;return(e=(t=this.animation)==null?void 0:t.currentTime)!=null?e:0}set currentTime(t){this.animation&&(this.animation.currentTime=t)}connectedCallback(){super.connectedCallback(),this.createAnimation()}disconnectedCallback(){super.disconnectedCallback(),this.destroyAnimation()}handleSlotChange(){this.destroyAnimation(),this.createAnimation()}async createAnimation(){var t,e;const s=(t=sr[this.easing])!=null?t:this.easing,i=(e=this.keyframes)!=null?e:bd[this.name],r=(await this.defaultSlot).assignedElements()[0];return!r||!i?!1:(this.destroyAnimation(),this.animation=r.animate(i,{delay:this.delay,direction:this.direction,duration:this.duration,easing:s,endDelay:this.endDelay,fill:this.fill,iterationStart:this.iterationStart,iterations:this.iterations}),this.animation.playbackRate=this.playbackRate,this.animation.addEventListener("cancel",this.handleAnimationCancel),this.animation.addEventListener("finish",this.handleAnimationFinish),this.play?(this.hasStarted=!0,this.emit("sl-start")):this.animation.pause(),!0)}destroyAnimation(){this.animation&&(this.animation.cancel(),this.animation.removeEventListener("cancel",this.handleAnimationCancel),this.animation.removeEventListener("finish",this.handleAnimationFinish),this.hasStarted=!1)}handleAnimationChange(){this.hasUpdated&&this.createAnimation()}handlePlayChange(){return this.animation?(this.play&&!this.hasStarted&&(this.hasStarted=!0,this.emit("sl-start")),this.play?this.animation.play():this.animation.pause(),!0):!1}handlePlaybackRateChange(){this.animation&&(this.animation.playbackRate=this.playbackRate)}cancel(){var t;(t=this.animation)==null||t.cancel()}finish(){var t;(t=this.animation)==null||t.finish()}render(){return y` <slot @slotchange=${this.handleSlotChange}></slot> `}};lt.styles=[L,vd];a([Xr("slot")],lt.prototype,"defaultSlot",2);a([l()],lt.prototype,"name",2);a([l({type:Boolean,reflect:!0})],lt.prototype,"play",2);a([l({type:Number})],lt.prototype,"delay",2);a([l()],lt.prototype,"direction",2);a([l({type:Number})],lt.prototype,"duration",2);a([l()],lt.prototype,"easing",2);a([l({attribute:"end-delay",type:Number})],lt.prototype,"endDelay",2);a([l()],lt.prototype,"fill",2);a([l({type:Number})],lt.prototype,"iterations",2);a([l({attribute:"iteration-start",type:Number})],lt.prototype,"iterationStart",2);a([l({attribute:!1})],lt.prototype,"keyframes",2);a([l({attribute:"playback-rate",type:Number})],lt.prototype,"playbackRate",2);a([x(["name","delay","direction","duration","easing","endDelay","fill","iterations","iterationsStart","keyframes"])],lt.prototype,"handleAnimationChange",1);a([x("play")],lt.prototype,"handlePlayChange",1);a([x("playbackRate")],lt.prototype,"handlePlaybackRateChange",1);lt.define("sl-animation");let es=null;function yd(){es={controls:{all:["Clock","Errors","Warnings","System","Input/Output","Compressor","Log"],enabled:["System"]},coms:{all:["COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9","COM10"],enabled:["COM1","COM6","COM10"]},static:{warning:["System","Motor","DC input low-voltage","Motor over-current","Single duty high","Average duty high","Reboot is pending"],error:["DC input over-voltage","DC input under-voltage","Motor over-current","Wrong compressor PSI settings set by user","Invalid data range read from motor controller","Motor controller lost communication with HMI","EST controller","Pressure sensor","RPM set is too low"]}}}function Be(){return es}function Mi(t,e,s=!1){if(typeof e=="function"){es=e(es);var i=s?"DROYD_FEATURES_UPDATED":"DROYD_SETTING_DATA_UPDATED";t instanceof ShadowRoot?t.dispatchEvent(new CustomEvent(i,{detail:{droyd:es},bubbles:!0,composed:!0})):console.warn(`Expected a ShadowRoot to emit ${i}.`)}else console.error("Mutator must be a function")}function wd(t,e){Mi(t,e,!0)}class _d extends HTMLElement{constructor(){super(),this.attachShadow({mode:"open"})}connectedCallback(){this.shadowRoot.innerHTML=`
+`,lt=class extends z{constructor(){super(...arguments),this.hasStarted=!1,this.name="none",this.play=!1,this.delay=0,this.direction="normal",this.duration=1e3,this.easing="linear",this.endDelay=0,this.fill="auto",this.iterations=1/0,this.iterationStart=0,this.playbackRate=1,this.handleAnimationFinish=()=>{this.play=!1,this.hasStarted=!1,this.emit("sl-finish")},this.handleAnimationCancel=()=>{this.play=!1,this.hasStarted=!1,this.emit("sl-cancel")}}get currentTime(){var t,e;return(e=(t=this.animation)==null?void 0:t.currentTime)!=null?e:0}set currentTime(t){this.animation&&(this.animation.currentTime=t)}connectedCallback(){super.connectedCallback(),this.createAnimation()}disconnectedCallback(){super.disconnectedCallback(),this.destroyAnimation()}handleSlotChange(){this.destroyAnimation(),this.createAnimation()}async createAnimation(){var t,e;const s=(t=sr[this.easing])!=null?t:this.easing,i=(e=this.keyframes)!=null?e:bd[this.name],r=(await this.defaultSlot).assignedElements()[0];return!r||!i?!1:(this.destroyAnimation(),this.animation=r.animate(i,{delay:this.delay,direction:this.direction,duration:this.duration,easing:s,endDelay:this.endDelay,fill:this.fill,iterationStart:this.iterationStart,iterations:this.iterations}),this.animation.playbackRate=this.playbackRate,this.animation.addEventListener("cancel",this.handleAnimationCancel),this.animation.addEventListener("finish",this.handleAnimationFinish),this.play?(this.hasStarted=!0,this.emit("sl-start")):this.animation.pause(),!0)}destroyAnimation(){this.animation&&(this.animation.cancel(),this.animation.removeEventListener("cancel",this.handleAnimationCancel),this.animation.removeEventListener("finish",this.handleAnimationFinish),this.hasStarted=!1)}handleAnimationChange(){this.hasUpdated&&this.createAnimation()}handlePlayChange(){return this.animation?(this.play&&!this.hasStarted&&(this.hasStarted=!0,this.emit("sl-start")),this.play?this.animation.play():this.animation.pause(),!0):!1}handlePlaybackRateChange(){this.animation&&(this.animation.playbackRate=this.playbackRate)}cancel(){var t;(t=this.animation)==null||t.cancel()}finish(){var t;(t=this.animation)==null||t.finish()}render(){return y` <slot @slotchange=${this.handleSlotChange}></slot> `}};lt.styles=[L,vd];a([Xr("slot")],lt.prototype,"defaultSlot",2);a([l()],lt.prototype,"name",2);a([l({type:Boolean,reflect:!0})],lt.prototype,"play",2);a([l({type:Number})],lt.prototype,"delay",2);a([l()],lt.prototype,"direction",2);a([l({type:Number})],lt.prototype,"duration",2);a([l()],lt.prototype,"easing",2);a([l({attribute:"end-delay",type:Number})],lt.prototype,"endDelay",2);a([l()],lt.prototype,"fill",2);a([l({type:Number})],lt.prototype,"iterations",2);a([l({attribute:"iteration-start",type:Number})],lt.prototype,"iterationStart",2);a([l({attribute:!1})],lt.prototype,"keyframes",2);a([l({attribute:"playback-rate",type:Number})],lt.prototype,"playbackRate",2);a([x(["name","delay","direction","duration","easing","endDelay","fill","iterations","iterationsStart","keyframes"])],lt.prototype,"handleAnimationChange",1);a([x("play")],lt.prototype,"handlePlayChange",1);a([x("playbackRate")],lt.prototype,"handlePlaybackRateChange",1);lt.define("sl-animation");let es=null;function yd(){es={controls:{all:["Clock","Errors","Warnings","System","Input/Output","Compressor","Log"],enabled:[]},coms:{all:["COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9","COM10"],enabled:[]},static:{warning:["System","Motor","DC input low-voltage","Motor over-current","Single duty high","Average duty high","Reboot is pending"],error:["DC input over-voltage","DC input under-voltage","Motor over-current","Wrong compressor PSI settings set by user","Invalid data range read from motor controller","Motor controller lost communication with HMI","EST controller","Pressure sensor","RPM set is too low"]}}}function Be(){return es}function Mi(t,e,s=!1){if(typeof e=="function"){es=e(es);var i=s?"DROYD_FEATURES_UPDATED":"DROYD_SETTING_DATA_UPDATED";t instanceof ShadowRoot?t.dispatchEvent(new CustomEvent(i,{detail:{droyd:es},bubbles:!0,composed:!0})):console.warn(`Expected a ShadowRoot to emit ${i}.`)}else console.error("Mutator must be a function")}function wd(t,e){Mi(t,e,!0)}class _d extends HTMLElement{constructor(){super(),this.attachShadow({mode:"open"})}connectedCallback(){this.shadowRoot.innerHTML=`
       <style>
         header {
           position: sticky;
@@ -7384,16 +7384,16 @@
 
       <div class="toggle-row">
         <div class="toggles">
-          <sl-switch size="large">System State</sl-switch>
-          <sl-switch size="large">Reset Motor</sl-switch>
+          <sl-switch>System State</sl-switch>
+          <sl-switch>Reset Motor</sl-switch>
         </div>
       </div>
 
       <div class="numbers">
-        <sl-input id="rpm" type="number" size="large" placeholder="0" label="Running RPM" min="0" max="350"></sl-input>
-        <sl-input id="voltage" type="number" size="large" placeholder="0" label="DC Input Voltage" min="0" max="430" disabled></sl-input>
-        <sl-input id="current" type="number" size="large" placeholder="0" label="DC Input Current" min="0" max="165" disabled></sl-input>
-        <sl-input id="coil" type="number" size="large" placeholder="0" label="Motor Coil Current" min="0" max="165" disabled></sl-input>
+        <sl-input id="rpm" type="number" placeholder="0" label="Running RPM" min="0" max="350"></sl-input>
+        <sl-input id="voltage" type="number" placeholder="0" label="DC Input Voltage" min="0" max="430" disabled></sl-input>
+        <sl-input id="current" type="number" placeholder="0" label="DC Input Current" min="0" max="165" disabled></sl-input>
+        <sl-input id="coil" type="number" placeholder="0" label="Motor Coil Current" min="0" max="165" disabled></sl-input>
       </div>
     `;const e=this.shadowRoot.getElementById("toggle-btn");e.addEventListener("click",()=>{this.running=!this.running,e.setAttribute("name",this.running?"pause-fill":"play-fill"),e.setAttribute("label",this.running?"Pause System":"Start System"),this.running&&(this.shadowRoot.getElementById("rpm").value=this.getRandomInRange(0,350),this.shadowRoot.getElementById("voltage").value=this.getRandomInRange(0,430),this.shadowRoot.getElementById("current").value=this.getRandomInRange(0,165),this.shadowRoot.getElementById("coil").value=this.getRandomInRange(0,165))}),this.shadowRoot.getElementById("sync-btn").addEventListener("click",()=>{console.log("Sync Now pressed!")})}}customElements.define("system-control",zd);class Ad extends HTMLElement{constructor(){super(),this.attachShadow({mode:"open"}),this.render=this.render.bind(this)}connectedCallback(){this.render()}render(){var r;const e=()=>Math.random()>.5,s=["DO1","DO2","DO3","DO4"].map(n=>({label:n,checked:e(),disabled:!1})),i=["DI1","DI2","DI3","DI4"].map(n=>({label:n,checked:e(),disabled:!0})),o=[...s,...i];this.shadowRoot.innerHTML=`
       <style>
@@ -7689,7 +7689,24 @@
       <sl-carousel-item>
         <slave-card id="card-${i}" com="${i}"><slave-controls></slave-controls></slave-card>
       </sl-carousel-item>
-    `);for(;s.length<3;)s.push(`
+    `);for(s.length||(s.push('<sl-carousel-item><div class="filler no-fill"></div></sl-carousel-item>'),s.push(`
+        <sl-carousel-item>
+          <div class="filler">
+            <div class="filler-content">
+              <div class="label-row">
+                <sl-icon name="info-circle" class="info-icon"></sl-icon>
+                <p>Add slaves from the Portal Settings drawer</p>
+              </div>
+              <sl-button variant="primary" size="small" id="open-drawer">Open Drawer</sl-button>
+              <div class="dots">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+            </div>
+          </div>
+        </sl-carousel-item>
+      `),s.push('<sl-carousel-item><div class="filler no-fill"></div></sl-carousel-item>')),s.length===1&&(s.unshift('<sl-carousel-item><div class="filler no-fill"></div></sl-carousel-item>'),s.push('<sl-carousel-item><div class="filler no-fill"></div></sl-carousel-item>'));!1;)s.push(`
         <sl-carousel-item>
           <div class="filler">
             <div class="filler-content">
@@ -7763,6 +7780,10 @@
           justify-content: center;
         }
 
+        .filler.no-fill {
+          border: 0px;
+        }
+
         .filler-content {
           text-align: center;
           color: #007b3f;
@@ -7816,15 +7837,29 @@
             opacity: 1;
           }
         }
+
+        ${e.coms.enabled.length==2&&`
+          sl-carousel::part(scroll-container) {
+            width: calc(((100vw - 144px) / 3 * 2) + 10px);
+            margin-left: calc((100vw - 144px) / 6);
+            margin-right: calc((100vw - 144px) / 6)
+          }
+        `}
       </style>
 
       <sl-carousel 
         style="height: 100%;"
+        ${e.coms.enabled.length>3?`
         pagination
         navigation
         loop
         slides-per-page="3"
-        slides-per-move="1">
+        slides-per-move="1"
+        `:e.coms.enabled.length===2?`
+        slides-per-page="2"
+        `:`
+        slides-per-page="3"
+        `}>
         ${s.join("")}
       </sl-carousel>
     `,this.shadowRoot.querySelectorAll("#open-drawer").forEach(i=>{i.addEventListener("click",()=>{this.dispatchEvent(new CustomEvent("DROYD_TOGGLE_DRAWER",{bubbles:!0,composed:!0}))})})}}customElements.define("slave-carousel",Id);class Ld extends HTMLElement{constructor(){super(),this.attachShadow({mode:"open"})}connectedCallback(){var o;const e=Be();if(!e||!((o=e.controls)!=null&&o.all))return;const s=e.controls.all.map(r=>{const n=e.controls.enabled.includes(r);return`
@@ -7878,7 +7913,7 @@
       </style>
 
       ${s}
-    `,this.shadowRoot.querySelectorAll("sl-switch").forEach(r=>{r.addEventListener("sl-change",n=>{const d=r.getAttribute("data-item"),c=n.target.checked;wd(this.shadowRoot,h=>{const f=new Set(h.controls.enabled);return c?f.add(d):f.delete(d),{...h,controls:{...h.controls,enabled:[...f]}}})})})}}customElements.define("feature-toggle",Ld);ai("/node_modules/@shoelace-style/shoelace/dist/");Wr("default",{resolver:t=>`/node_modules/@shoelace-style/shoelace/dist/assets/icons/${t}.svg`,mutator:t=>t.setAttribute("fill","currentColor")});yd();document.querySelector("#app").innerHTML=`
+    `,this.shadowRoot.querySelectorAll("sl-switch").forEach(r=>{r.addEventListener("sl-change",n=>{const d=r.getAttribute("data-item"),c=n.target.checked;wd(this.shadowRoot,h=>{const f=new Set(h.controls.enabled);return c?f.add(d):f.delete(d),{...h,controls:{...h.controls,enabled:[...f]}}})})})}}customElements.define("feature-toggle",Ld);ai("/shoelace");Wr("default",{resolver:t=>`/node_modules/@shoelace-style/shoelace/dist/assets/icons/${t}.svg`,mutator:t=>t.setAttribute("fill","currentColor")});yd();document.querySelector("#app").innerHTML=`
   <app-header></app-header>
   <slave-carousel></slave-carousel>
   <app-drawer>
