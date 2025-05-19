@@ -7913,7 +7913,7 @@
       </style>
 
       ${s}
-    `,this.shadowRoot.querySelectorAll("sl-switch").forEach(r=>{r.addEventListener("sl-change",n=>{const d=r.getAttribute("data-item"),c=n.target.checked;wd(this.shadowRoot,h=>{const f=new Set(h.controls.enabled);return c?f.add(d):f.delete(d),{...h,controls:{...h.controls,enabled:[...f]}}})})})}}customElements.define("feature-toggle",Ld);console.log("Is DEV?",!1);ai("/shoelace");Wr("default",{resolver:t=>`/node_modules/@shoelace-style/shoelace/dist/assets/icons/${t}.svg`,mutator:t=>t.setAttribute("fill","currentColor")});yd();document.querySelector("#app").innerHTML=`
+    `,this.shadowRoot.querySelectorAll("sl-switch").forEach(r=>{r.addEventListener("sl-change",n=>{const d=r.getAttribute("data-item"),c=n.target.checked;wd(this.shadowRoot,h=>{const f=new Set(h.controls.enabled);return c?f.add(d):f.delete(d),{...h,controls:{...h.controls,enabled:[...f]}}})})})}}customElements.define("feature-toggle",Ld);console.log("Is DEV?",!1);ai("/shoelace");Wr("default",{resolver:t=>`/shoelace/assets/icons/${t}.svg`,mutator:t=>t.setAttribute("fill","currentColor")});yd();document.querySelector("#app").innerHTML=`
   <app-header></app-header>
   <slave-carousel></slave-carousel>
   <app-drawer>
