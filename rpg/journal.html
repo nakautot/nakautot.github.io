@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RPG Journal Companion</title>
+  <!-- Font Awesome for icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-…"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0e7d8;
+      color: #333;
+      padding: 20px;
+    }
+    .toolbar {
+      margin-bottom: 20px;
+    }
+    .toolbar button {
+      padding: 8px 12px;
+      margin-right: 8px;
+      border: none;
+      border-radius: 4px;
+      background: #4a90e2;
+      color: #fff;
+      cursor: pointer;
+    }
+    .toolbar input {
+      width: 60%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #journal {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 16px;
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.2em;
+      display: flex;
+      align-items: center;
+    }
+    .card h2 i {
+      margin-right: 8px;
+      color: #666;
+    }
+    .section-list {
+      list-style: none;
+      padding-left: 0;
+    }
+    .section-list li {
+      margin-bottom: 4px;
+    }
+    .card h3 {
+      margin-bottom: 4px;
+      margin-top: 12px;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button id="copyJson"><i class="fa fa-copy"></i> Copy JSON</button>
+    <input type="text" id="jsonInput" placeholder="Paste JSON here" />
+    <button id="loadJson"><i class="fa fa-upload"></i> Load JSON</button>
+  </div>
+
+  <div id="journal"></div>
+
+  <script>
+    const storageKey = 'rpgJournal';
+    let journal = {
+      lastLogHash: '',
+      status: { Day: 1, FoodConsumedToday: 0, Health: 0 },
+      attributes: { Strength: 0, Endurance: 0, Speed: 0, Life: 0, Skill: 0, Intelligence: 0 },
+      map: [],
+      harvestables: [],
+      Consumables: [],
+      Loot: [],
+      Gear: [],
+      NPCs: [],
+      Quests: { available: [], active: [], completed: [] }
+    };
+
+    function load() {
+      const data = localStorage.getItem(storageKey);
+      if (data) {
+        try {
+          journal = JSON.parse(data);
+        } catch (e) {
+          console.error('Invalid JSON in storage');
+        }
+      }
+    }
+
+    function save() {
+      localStorage.setItem(storageKey, JSON.stringify(journal));
+    }
+
+    function render() {
+      const container = document.getElementById('journal');
+      container.innerHTML = '';
+
+      // Last Log Hash
+      const hashCard = document.createElement('div');
+      hashCard.className = 'card';
+      hashCard.innerHTML = 
+        `<h2><i class="fa fa-hashtag"></i> Last Log Hash</h2>
+         <p>${journal.lastLogHash}</p>`;
+      container.appendChild(hashCard);
+
+      // Status
+      const statusCard = document.createElement('div');
+      statusCard.className = 'card';
+      statusCard.innerHTML = 
+        `<h2><i class="fa fa-heart"></i> Status</h2>
+         <ul class="section-list">
+           <li><strong>Day:</strong> ${journal.status.Day}</li>
+           <li><strong>Food Consumed:</strong> ${journal.status.FoodConsumedToday}</li>
+           <li><strong>Health:</strong> ${journal.status.Health}</li>
+         </ul>`;
+      container.appendChild(statusCard);
+
+      // Attributes
+      const attrCard = document.createElement('div');
+      attrCard.className = 'card';
+      attrCard.innerHTML = 
+        `<h2><i class="fa fa-star"></i> Attributes</h2>
+         <ul class="section-list">
+           ${Object.entries(journal.attributes)
+             .map(([k, v]) => `<li><strong>${k}:</strong> ${v}</li>`)
+             .join('')}
+         </ul>`;
+      container.appendChild(attrCard);
+
+      // Map
+      const mapCard = document.createElement('div');
+      mapCard.className = 'card';
+      mapCard.innerHTML = `<h2><i class="fa fa-map"></i> Map</h2>`;
+      if (journal.map.length === 0) {
+        mapCard.innerHTML += '<p>(No map data)</p>';
+      } else {
+        journal.map.forEach(loc => {
+          mapCard.innerHTML += `
+            <div style="margin-bottom:12px;">
+              <strong>${loc.coordinate} – ${loc.name}</strong>
+              <div><i class="fa fa-tree"></i> Resources:
+                <ul>${loc.resources.map(r => `<li>${r.name}: ${r.count}</li>`).join('')}</ul>
+              </div>
+              <div><i class="fa fa-cog"></i> Fixtures:
+                <ul>${loc.fixtures.map(f => `<li>${f.name} (${f.type}): ${f.description}</li>`).join('')}</ul>
+              </div>
+            </div>`;
+        });
+      }
+      container.appendChild(mapCard);
+
+      // Harvestables
+      const harvCard = document.createElement('div');
+      harvCard.className = 'card';
+      harvCard.innerHTML = 
+        `<h2><i class="fa fa-spa"></i> Harvestables</h2>
+         <ul class="section-list">
+           ${journal.harvestables.length
+             ? journal.harvestables.map(h => `<li>${h.name} (Days left: ${h.daysBeforeharves})</li>`).join('')
+             : '<li>(None)</li>'}
+         </ul>`;
+      container.appendChild(harvCard);
+
+      // Consumables
+      const consCard = document.createElement('div');
+      consCard.className = 'card';
+      consCard.innerHTML = 
+        `<h2><i class="fa fa-utensils"></i> Consumables</h2>
+         <ul class="section-list">
+           ${journal.Consumables.length
+             ? journal.Consumables.map(c => `<li>${c.name} (${c.quantitiy}): ${c.description}</li>`).join('')
+             : '<li>(None)</li>'}
+         </ul>`;
+      container.appendChild(consCard);
+
+      // Loot
+      const lootCard = document.createElement('div');
+      lootCard.className = 'card';
+      lootCard.innerHTML = 
+        `<h2><i class="fa fa-gift"></i> Loot</h2>
+         <ul class="section-list">
+           ${journal.Loot.length
+             ? journal.Loot.map(l => `<li>${l.name} (${l.quantitiy}): ${l.description}</li>`).join('')
+             : '<li>(None)</li>'}
+         </ul>`;
+      container.appendChild(lootCard);
+
+      // Gear
+      const gearCard = document.createElement('div');
+      gearCard.className = 'card';
+      gearCard.innerHTML = 
+        `<h2><i class="fa fa-shield-alt"></i> Gear</h2>
+         <ul class="section-list">
+           ${journal.Gear.length
+             ? journal.Gear.map(g => `<li>${g.name} (${g.quantitiy}) ${g.equipped ? '(Equipped)' : ''}: ${g.description}</li>`).join('')
+             : '<li>(None)</li>'}
+         </ul>`;
+      container.appendChild(gearCard);
+
+      // NPCs
+      const npcCard = document.createElement('div');
+      npcCard.className = 'card';
+      npcCard.innerHTML = 
+        `<h2><i class="fa fa-user"></i> NPCs</h2>
+         <ul class="section-list">
+           ${journal.NPCs.length
+             ? journal.NPCs.map(n => `<li>${n.name} @ ${n.location}</li>`).join('')
+             : '<li>(None)</li>'}
+         </ul>`;
+      container.appendChild(npcCard);
+
+      // Quests
+      const questCard = document.createElement('div');
+      questCard.className = 'card';
+      questCard.innerHTML = `<h2><i class="fa fa-scroll"></i> Quests</h2>`;
+      ['available','active','completed'].forEach(type => {
+        questCard.innerHTML += `<h3>${type.charAt(0).toUpperCase()+type.slice(1)}</h3>
+          <ul class="section-list">
+            ${
+              journal.Quests[type].length
+                ? journal.Quests[type].map(q =>
+                    `<li>${q.details} (Reward: ${q.reward}; Giver: ${q.giver} @ ${q.giverLocation})</li>`
+                  ).join('')
+                : '<li>(None)</li>'
+            }
+          </ul>`;
+      });
+      container.appendChild(questCard);
+    }
+
+    // Button handlers
+    document.getElementById('copyJson').addEventListener('click', () => {
+      const str = JSON.stringify(journal, null, 2);
+      navigator.clipboard.writeText(str).then(() => {
+        alert('Journal JSON copied to clipboard!');
+      });
+    });
+
+    document.getElementById('loadJson').addEventListener('click', () => {
+      const raw = document.getElementById('jsonInput').value;
+      try {
+        const obj = JSON.parse(raw);
+        journal = obj;
+        save();
+        render();
+      } catch {
+        alert('Invalid JSON — please check your input.');
+      }
+    });
+
+    // Init
+    load();
+    render();
+  </script>
+</body>
+</html>
