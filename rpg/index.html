@@ -2,51 +2,106 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>RPG Journal Prompt Builder</title>
+  <title>RPG Smart Prompt Builder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: sans-serif; padding: 1rem; background: #2e2e2e; color: #eee; }
-    textarea, input { width: 100%; padding: 0.5rem; margin: 0.5rem 0; background: #444; color: #fff; border: none; }
-    button { padding: 0.5rem 1rem; background: #6c9; border: none; cursor: pointer; }
-    pre { background: #111; padding: 1rem; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+      background: #2e2e2e;
+      color: #eee;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      background: #444;
+      color: #fff;
+      border: none;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      background: #6c9;
+      border: none;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+    pre {
+      background: #111;
+      padding: 1rem;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
   </style>
 </head>
 <body>
-  <h1>RPG Command Sender</h1>
-  <label>Enter command:</label>
-  <textarea id="command" rows="3">cook hearty fish stew</textarea>
+  <h1>🧠 RPG Prompt Builder with Drop Priorities</h1>
 
-  <label>Paste full journal JSON:</label>
-  <textarea id="journalInput" rows="10"></textarea>
+  <label><strong>Command:</strong></label>
+  <textarea id="command" rows="2">cook hearty fish stew</textarea>
 
-  <button onclick="buildPrompt()">Generate Partial Prompt</button>
+  <label><strong>Journal JSON:</strong></label>
+  <textarea id="journal" rows="12" placeholder="Paste your full RPG journal here..."></textarea>
 
-  <h2>Final JSON Payload:</h2>
-  <pre id="result"></pre>
+  <label><strong>Token Budget (default 3000):</strong></label>
+  <input type="number" id="budget" value="3000" />
+
+  <button onclick="buildPrompt()">Generate Smart Prompt</button>
+
+  <h2>📦 Smart Prompt Output:</h2>
+  <pre id="output">Waiting...</pre>
 
   <script>
     function buildPrompt() {
-      const command = document.getElementById("command").value.trim();
       let journal;
+      const command = document.getElementById("command").value.trim();
+      const tokenBudget = parseInt(document.getElementById("budget").value, 10);
       try {
-        journal = JSON.parse(document.getElementById("journalInput").value);
+        journal = JSON.parse(document.getElementById("journal").value);
       } catch {
-        return alert("Invalid JSON.");
+        return alert("Invalid JSON in journal.");
       }
 
-      const partial = {
-        meta: journal.meta,
-        inventory: journal.inventory?.food,
-        stats: journal.stats,
-        resources: journal.resources,
+      let budget = tokenBudget;
+      const result = {
+        command: command,
+        journal: {
+          meta: journal.meta,
+          stats: journal.stats
+        },
+        rules: {
+          core: journal.rules?.core || []
+        }
       };
 
-      const payload = {
-        command,
-        partial_journal: partial
+      const addIfRoom = (key, value, estimatedTokens) => {
+        if (!value || budget <= 0) return;
+        if (estimatedTokens <= budget) {
+          result.journal[key] = value;
+          budget -= estimatedTokens;
+        }
       };
 
-      document.getElementById("result").textContent = JSON.stringify(payload, null, 2);
+      // Rough token estimates by section
+      addIfRoom("inventory", journal.inventory, 600);
+      addIfRoom("resources", journal.resources, 500);
+      addIfRoom("quests", journal.quests, 400);
+      addIfRoom("recipes", journal.recipes, 300);
+      addIfRoom("map", journal.map, 1000);
+
+      // Optional rule tiers
+      const ruleWeight = 25;
+      if ((journal.rules?.important || []).length * ruleWeight < budget) {
+        result.rules.important = journal.rules.important;
+        budget -= journal.rules.important.length * ruleWeight;
+      }
+
+      if ((journal.rules?.optional || []).length * ruleWeight < budget) {
+        result.rules.optional = journal.rules.optional;
+      }
+
+      document.getElementById("output").textContent = JSON.stringify(result, null, 2);
     }
   </script>
 </body>
