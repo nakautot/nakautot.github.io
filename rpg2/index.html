@@ -24,15 +24,18 @@
         <div id="card-container"></div>
     </main>
 
-    <footer class="text-center text-sm text-gray-600 py-4 border-t">
-        &copy; 2025 Your Name
-    </footer>
-
+    <footer-bar></footer-bar>
     <side-drawer></side-drawer>
 
     <script src="./components/storage.js"></script>
     <script src="./components/pill-bar.js"></script>
     <script src="./components/card.js"></script>
     <script src="./components/side-drawer.js"></script>
+    <script src="./components/footer-bar.js"></script>
+    <script>
+        document.addEventListener('footer-send', e => {
+            console.log('User submitted:', e.detail.message);
+        });
+    </script>
 </body>
 </html>
