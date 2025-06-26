@@ -14,10 +14,10 @@ const categories = [
 
 const colorCycle = ['blue', 'green', 'yellow', 'red', 'purple'];
 
-container.innerHTML = `
+container.innerHTML = /*html*/`
   <div class="flex flex-wrap gap-2">
-    ${categories.map((cat, index) => {
-      const color = colorCycle[index % colorCycle.length];
+    ${categories.map((cat, i) => {
+      const color = colorCycle[i % colorCycle.length];
       const bg = `bg-${color}-100`;
       const text = `text-${color}-800`;
       const hover = `hover:bg-${color}-200`;
@@ -25,6 +25,7 @@ container.innerHTML = `
         <button
           class="flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${bg} ${text} ${hover}"
           data-name="${cat.name}"
+          type="button"
         >
           <span>${cat.icon}</span> ${cat.name}
         </button>
@@ -34,9 +35,11 @@ container.innerHTML = `
 `;
 
 container.querySelectorAll('button').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     const name = btn.dataset.name;
-    container.dispatchEvent(new CustomEvent('pill-clicked', {
+    await window.dbSet?.(name); // Wait until save is complete
+    // Emit event globally (on document) so listeners outside this container can hear it
+    document.dispatchEvent(new CustomEvent('pill-clicked', {
       detail: { name },
       bubbles: true
     }));

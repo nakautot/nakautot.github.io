@@ -1,6 +1,6 @@
 const card = document.getElementById('card-container');
 
-card.innerHTML = `
+card.innerHTML = /*html*/`
   <div class="bg-white shadow rounded-lg p-4 max-w-sm mx-auto">
     <div class="font-bold text-lg mb-2">Card Title</div>
     <p>This is a simple card built with Tailwind.</p>

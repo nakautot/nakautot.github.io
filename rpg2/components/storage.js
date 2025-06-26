@@ -1,22 +1,13 @@
 function openDb(callback) {
   const request = indexedDB.open('rpg-db', 1);
-  let db;
-
   request.onupgradeneeded = function (event) {
-    db = event.target.result;
+    const db = event.target.result;
     if (!db.objectStoreNames.contains('state')) {
       db.createObjectStore('state');
     }
   };
-
   request.onsuccess = function (event) {
-    db = event.target.result;
-    // Defensive: If upgrade was needed, it has happened by now.
-    callback(db);
-  };
-
-  request.onerror = function () {
-    console.error("IndexedDB open failed");
+    callback(request.result);
   };
 }
 window.dbSet = function (value) {
