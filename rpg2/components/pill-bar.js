@@ -29,7 +29,8 @@ class PillBar extends HTMLElement {
               data-name="${cat.name}"
               type="button"
             >
-              <span>${cat.icon}</span> ${cat.name}
+              <span>${cat.icon}</span>
+              <span class="hidden sm:inline">${cat.name}</span>
             </button>
           `;
         }).join('')}
