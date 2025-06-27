@@ -39,7 +39,30 @@
         </div>
     </footer-bar>
 
-    <side-drawer></side-drawer>
+    <side-drawer>
+        <div slot="Establishments" hidden><establishments-card></establishments-card></div>
+        <div slot="NPC" hidden><npc-card></npc-card></div>
+        <div slot="Gear" hidden><gear-card></gear-card></div>
+        <div slot="Loot" hidden><loot-card></loot-card></div>
+        <div slot="Consumables" hidden><consumables-card></consumables-card></div>
+        <div slot="Harvestibles" hidden><harvestibles-card></harvestibles-card></div>
+        <div slot="Map" hidden><map-card></map-card></div>
+        <div slot="Stats" hidden><stats-card></stats-card></div>
+        <div slot="Attributes" hidden><attributes-card></attributes-card></div>
+        <div slot="System" hidden><system-card></system-card></div>
+    </side-drawer>
+
+    <!-- Drawer Scripts -->
+    <script src="./components/establishments-card.js"></script>
+    <script src="./components/npc-card.js"></script>
+    <script src="./components/gear-card.js"></script>
+    <script src="./components/loot-card.js"></script>
+    <script src="./components/consumables-card.js"></script>
+    <script src="./components/harvestibles-card.js"></script>
+    <script src="./components/map-card.js"></script>
+    <script src="./components/stats-card.js"></script>
+    <script src="./components/attributes-card.js"></script>
+    <script src="./components/system-card.js"></script>
 
     <script src="./components/storage.js"></script>
     <script src="./components/pill-bar.js"></script>
