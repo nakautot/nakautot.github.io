@@ -35,9 +35,7 @@
 
     <!-- Sticky Footer -->
     <footer-bar class="sticky bottom-0 z-30 bg-white shadow-md">
-        <div class="text-gray-500 text-sm">
-            Chat mode: <strong>World Simulation</strong>
-        </div>
+        <chat-status></chat-status>
     </footer-bar>
 
     <side-drawer>
@@ -67,10 +65,15 @@
     <script src="./components/attributes-card.js"></script>
     <script src="./components/system-card.js"></script>
 
+    <script src="./components/chat-status.js"></script>
     <script src="./components/pill-bar.js"></script>
     <script src="./components/info-card.js"></script>
     <script src="./components/side-drawer.js"></script>
     <script src="./components/footer-bar.js"></script>
+
+    <script src="./components/api-key-dialog.js"></script>
+<api-key-dialog></api-key-dialog>
+
     <script>
         document.addEventListener('footer-send', e => {
             console.log('User submitted:', e.detail.message);

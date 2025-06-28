@@ -10,33 +10,30 @@
         db.createObjectStore('metadata', { keyPath: 'name' });
       }
     };
-    request.onsuccess = function (event) {
+    request.onsuccess = function () {
       callback(request.result);
     };
   }
 
-  // Save selected pill name
   window.dbSet = function (value) {
-    openDb(function (db) {
+    openDb(db => {
       const tx = db.transaction('state', 'readwrite');
-      const store = tx.objectStore('state');
-      store.put(value, 'selectedPill');
-      tx.oncomplete = function () { db.close(); };
+      tx.objectStore('state').put(value, 'selectedPill');
+      tx.oncomplete = () => db.close();
     });
   };
 
-  // Load selected pill name
   window.dbGet = function () {
-    return new Promise(function (resolve) {
-      openDb(function (db) {
+    return new Promise(resolve => {
+      openDb(db => {
         const tx = db.transaction('state', 'readonly');
         const store = tx.objectStore('state');
-        const getRequest = store.get('selectedPill');
-        getRequest.onsuccess = function () {
-          resolve(getRequest.result);
+        const req = store.get('selectedPill');
+        req.onsuccess = () => {
+          resolve(req.result);
           db.close();
         };
-        getRequest.onerror = function () {
+        req.onerror = () => {
           resolve(null);
           db.close();
         };
@@ -44,9 +41,8 @@
     });
   };
 
-  // Save metadata entry if it doesn't exist
   window.saveMetadataIfNew = function (meta) {
-    openDb(function (db) {
+    openDb(db => {
       const tx = db.transaction('metadata', 'readwrite');
       const store = tx.objectStore('metadata');
       const getRequest = store.get(meta.name);
@@ -55,23 +51,49 @@
           store.put(meta);
         }
       };
-      tx.oncomplete = function () { db.close(); };
+      tx.oncomplete = () => db.close();
     });
   };
 
-  // Fetch all metadata entries
   window.getAllMetadata = function () {
-    return new Promise(function (resolve) {
-      openDb(function (db) {
+    return new Promise(resolve => {
+      openDb(db => {
         const tx = db.transaction('metadata', 'readonly');
         const store = tx.objectStore('metadata');
         const request = store.getAll();
-        request.onsuccess = function () {
+        request.onsuccess = () => {
           resolve(request.result || []);
           db.close();
         };
-        request.onerror = function () {
+        request.onerror = () => {
           resolve([]);
+          db.close();
+        };
+      });
+    });
+  };
+
+  // Save and get API key
+  window.setApiKey = function (key) {
+    openDb(db => {
+      const tx = db.transaction('state', 'readwrite');
+      tx.objectStore('state').put(key, 'openai_api_key');
+      tx.oncomplete = () => db.close();
+    });
+  };
+
+  window.getApiKey = function () {
+    return new Promise(resolve => {
+      openDb(db => {
+        const tx = db.transaction('state', 'readonly');
+        const store = tx.objectStore('state');
+        const req = store.get('openai_api_key');
+        req.onsuccess = () => {
+          resolve(req.result);
+          db.close();
+        };
+        req.onerror = () => {
+          resolve(null);
           db.close();
         };
       });
