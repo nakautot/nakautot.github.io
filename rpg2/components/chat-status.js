@@ -1,4 +1,50 @@
 (() => {
+  const schemas = {
+    "messages": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ts": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "description": "A numeric timestamp represented as a string."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["request", "response"],
+          "description": "The type of the message, either 'request' or 'response'."
+        },
+        "message": {
+          "type": "string",
+          "description": "The message content."
+        }
+      },
+      "required": ["ts", "type", "message"],
+      "additionalProperties": false
+    },
+    "gameMeta": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ts": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "description": "Unique game ID, represented as a numeric string."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the player or character."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biography or backstory."
+        }
+      },
+      "required": ["ts", "name", "bio"],
+      "additionalProperties": false
+    },
+  };
+
   class ChatStatus extends HTMLElement {
     connectedCallback() {
       this.innerHTML = /*html*/`
@@ -37,6 +83,7 @@
         const active = await window.dbGetKey?.('activeGameId');
 
         await window.deleteGame?.(ts);
+        await window.deleteMessagesByGameId?.(ts); // ✅ Remove all messages for this game
 
         if (active === ts) {
           await window.dbDeleteKey?.('activeGameId');
@@ -60,7 +107,7 @@
         }));
       });
 
-      // ✅ Handle footer-send event
+      // Handle footer-send event
       document.addEventListener('footer-send', async (e) => {
         const activeGameId = await window.dbGetKey?.('activeGameId');
         const text = e.detail.message?.trim();

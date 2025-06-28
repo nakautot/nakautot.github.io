@@ -13,7 +13,8 @@
         db.createObjectStore('games', { keyPath: 'ts' });
       }
       if (!db.objectStoreNames.contains('messages')) {
-        db.createObjectStore('messages', { keyPath: 'ts' });
+        const store = db.createObjectStore('messages', { keyPath: 'ts' });
+        store.createIndex('by_gameId', 'gameId', { unique: false });
       }
     };
     request.onsuccess = function () {
@@ -250,6 +251,35 @@
         request.onerror = function () {
           resolve([]);
           db.close();
+        };
+      });
+    });
+  };
+
+  window.deleteMessagesByGameId = function (gameId) {
+    return new Promise((resolve) => {
+      openDb((db) => {
+        const tx = db.transaction('messages', 'readwrite');
+        const store = tx.objectStore('messages');
+        const index = store.index('by_gameId');
+        const range = IDBKeyRange.only(Number(gameId));
+
+        const request = index.openCursor(range);
+        request.onsuccess = function (event) {
+          const cursor = event.target.result;
+          if (cursor) {
+            cursor.delete();
+            cursor.continue();
+          }
+        };
+
+        tx.oncomplete = function () {
+          db.close();
+          resolve(true);
+        };
+        tx.onerror = function () {
+          db.close();
+          resolve(false);
         };
       });
     });
