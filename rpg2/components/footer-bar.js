@@ -1,8 +1,9 @@
 class FooterBar extends HTMLElement {
-  connectedCallback() {
+  async connectedCallback() {
     this.render();
     this.cacheElements();
     this.attachEvents();
+    await this.updateEnabledState();
   }
 
   cacheElements() {
@@ -12,7 +13,7 @@ class FooterBar extends HTMLElement {
 
   attachEvents() {
     this.textarea.addEventListener('input', () => {
-      this.sendBtn.disabled = !this.textarea.value.trim();
+      this.sendBtn.disabled = !this.textarea.value.trim() || this.textarea.disabled;
     });
 
     this.sendBtn.addEventListener('click', () => {
@@ -27,10 +28,21 @@ class FooterBar extends HTMLElement {
       this.textarea.value = '';
       this.sendBtn.disabled = true;
     });
+
+    document.addEventListener('game-created', () => this.updateEnabledState());
+    document.addEventListener('game-loaded', () => this.updateEnabledState());
+    document.addEventListener('game-deleted', () => this.updateEnabledState());
+  }
+
+  async updateEnabledState() {
+    const activeGameId = await window.dbGetKey?.('activeGameId');
+    const enabled = !!activeGameId;
+
+    this.textarea.disabled = !enabled;
+    this.sendBtn.disabled = !enabled || !this.textarea.value.trim();
   }
 
   render() {
-    // Clear only if it's not already rendered
     if (this.querySelector('[data-footer-wrapper]')) return;
 
     const wrapper = document.createElement('div');

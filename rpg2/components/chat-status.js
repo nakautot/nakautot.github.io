@@ -10,11 +10,20 @@
       // Handle new-game event
       document.addEventListener('new-game', async (e) => {
         const { name, bio } = e.detail;
-        const ts = Date.now().toString();
-        const gameEntry = { ts, name, bio };
+        const ts = Date.now();
+        const gameEntry = { ts: ts.toString(), name, bio };
 
         await window.saveGame?.(gameEntry);
-        await window.setActiveGame?.(ts);
+        await window.setActiveGame?.(gameEntry.ts);
+
+        const introMessage = {
+          gameId: Number(gameEntry.ts),
+          ts: ts - 1,
+          messageRTF: `Welcome <b>${name}</b>. <i>${bio}</i><br><br>Your journey begins now...`,
+          type: "response"
+        };
+
+        await window.saveMessage?.(introMessage);
 
         document.dispatchEvent(new CustomEvent('game-created', {
           detail: gameEntry,
@@ -39,7 +48,7 @@
         }));
       });
 
-      // ✅ Handle load-game event
+      // Handle load-game event
       document.addEventListener('load-game', async (e) => {
         const ts = e.detail;
 
@@ -47,6 +56,28 @@
 
         document.dispatchEvent(new CustomEvent('game-loaded', {
           detail: ts,
+          bubbles: true
+        }));
+      });
+
+      // ✅ Handle footer-send event
+      document.addEventListener('footer-send', async (e) => {
+        const activeGameId = await window.dbGetKey?.('activeGameId');
+        const text = e.detail.message?.trim();
+        if (!activeGameId || !text) return;
+
+        const ts = Date.now();
+        const message = {
+          gameId: Number(activeGameId),
+          ts,
+          messageRTF: text,
+          type: "request"
+        };
+
+        await window.saveMessage?.(message);
+
+        document.dispatchEvent(new CustomEvent('game-updated', {
+          detail: message,
           bubbles: true
         }));
       });

@@ -12,6 +12,9 @@
       if (!db.objectStoreNames.contains('games')) {
         db.createObjectStore('games', { keyPath: 'ts' });
       }
+      if (!db.objectStoreNames.contains('messages')) {
+        db.createObjectStore('messages', { keyPath: 'ts' });
+      }
     };
     request.onsuccess = function () {
       callback(request.result);
@@ -217,6 +220,36 @@
         tx.onerror = function () {
           db.close();
           resolve();
+        };
+      });
+    });
+  };
+
+  window.saveMessage = function (entry) {
+    openDb(function (db) {
+      const tx = db.transaction('messages', 'readwrite');
+      const store = tx.objectStore('messages');
+      store.put(entry);
+      tx.oncomplete = function () { db.close(); };
+    });
+  };
+
+  window.getMessagesForGame = function (gameId) {
+    return new Promise(resolve => {
+      openDb(function (db) {
+        const tx = db.transaction('messages', 'readonly');
+        const store = tx.objectStore('messages');
+        const request = store.getAll();
+
+        request.onsuccess = function () {
+          const filtered = request.result?.filter(m => m.gameId === parseInt(gameId)) || [];
+          resolve(filtered);
+          db.close();
+        };
+
+        request.onerror = function () {
+          resolve([]);
+          db.close();
         };
       });
     });
