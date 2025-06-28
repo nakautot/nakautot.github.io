@@ -10,7 +10,11 @@ class SideDrawer extends HTMLElement {
     this.overlay.addEventListener('click', () => this.close());
 
     document.addEventListener('pill-clicked', () => this.open());
+
+    // ✅ Close the drawer when a new game is created
+    document.addEventListener('game-created', () => this.close());
   }
+
 
   cacheElements() {
     this.sdTitle = this.querySelector('[data-title]');
@@ -51,7 +55,11 @@ class SideDrawer extends HTMLElement {
     this.overlay.classList.remove('hidden');
   }
 
-  close() {
+  async close() {
+    // Prevent closing if no active game exists
+    const hasGame = await window.hasActiveGame?.();
+    if (!hasGame) return;
+
     this.drawer.classList.add('translate-x-full');
     this.overlay.classList.add('hidden');
   }

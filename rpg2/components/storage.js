@@ -9,6 +9,9 @@
       if (!db.objectStoreNames.contains('metadata')) {
         db.createObjectStore('metadata', { keyPath: 'name' });
       }
+      if (!db.objectStoreNames.contains('games')) {
+        db.createObjectStore('games', { keyPath: 'ts' });
+      }
     };
     request.onsuccess = function () {
       callback(request.result);
@@ -93,6 +96,66 @@
           db.close();
         };
         req.onerror = () => {
+          resolve(null);
+          db.close();
+        };
+      });
+    });
+  };
+
+  window.hasActiveGame = function () {
+    return new Promise(resolve => {
+      openDb(db => {
+        const tx = db.transaction('state', 'readonly');
+        const store = tx.objectStore('state');
+        const get = store.get('activeGameId');
+        get.onsuccess = () => resolve(!!get.result);
+        get.onerror = () => resolve(false);
+      });
+    });
+  };
+
+  // Save a new game entry to 'games' store
+  window.saveGame = function (game) {
+    return new Promise(resolve => {
+      openDb(db => {
+        if (!db.objectStoreNames.contains('games')) {
+          console.warn("Games store not found in DB.");
+          resolve(false);
+          return;
+        }
+        const tx = db.transaction('games', 'readwrite');
+        const store = tx.objectStore('games');
+        store.put(game);
+        tx.oncomplete = () => {
+          db.close();
+          resolve(true);
+        };
+      });
+    });
+  };
+
+  // Set active game ID
+  window.setActiveGame = function (ts) {
+    openDb(db => {
+      const tx = db.transaction('state', 'readwrite');
+      const store = tx.objectStore('state');
+      store.put(ts, 'activeGameId');
+      tx.oncomplete = () => db.close();
+    });
+  };
+
+  window.dbGetKey = function (key) {
+    return new Promise(function (resolve) {
+      openDb(function (db) {
+        const tx = db.transaction('state', 'readonly');
+        const store = tx.objectStore('state');
+        const request = store.get(key);
+        request.onsuccess = function () {
+          resolve(request.result);
+          db.close();
+        };
+        request.onerror = function () {
           resolve(null);
           db.close();
         };

@@ -58,11 +58,10 @@
           bubbles: true
         }));
 
-        // Close drawer
-        const drawer = document.querySelector('side-drawer');
-        if (drawer && typeof drawer.close === 'function') {
-          drawer.close();
-        }
+        // ✅ Clear inputs and disable button
+        nameInput.value = '';
+        bioInput.value = '';
+        btn.disabled = true;
       });
     }
   }

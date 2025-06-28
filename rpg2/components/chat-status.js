@@ -7,8 +7,23 @@
         </div>
       `;
 
-      document.addEventListener('new-game', (e) => {
-        console.log('[New Game Event]', e.detail);
+      document.addEventListener('new-game', async (e) => {
+        const { name, bio } = e.detail;
+        const ts = Date.now().toString();
+
+        const gameEntry = { ts, name, bio };
+
+        // Save to games list
+        await window.saveGame?.(gameEntry);
+
+        // Set active game ID
+        await window.setActiveGame?.(ts);
+
+        // Emit game-created
+        document.dispatchEvent(new CustomEvent('game-created', {
+          detail: gameEntry,
+          bubbles: true
+        }));
       });
     }
   }

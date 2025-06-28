@@ -51,6 +51,8 @@
         <div slot="System" hidden><system-card></system-card></div>
     </side-drawer>
 
+    <api-key-dialog></api-key-dialog>
+
     <script src="./components/storage.js"></script>
 
     <!-- Drawer Scripts -->
@@ -72,11 +74,18 @@
     <script src="./components/footer-bar.js"></script>
 
     <script src="./components/api-key-dialog.js"></script>
-<api-key-dialog></api-key-dialog>
 
     <script>
-        document.addEventListener('footer-send', e => {
-            console.log('User submitted:', e.detail.message);
+        // Wait for everything to load before checking
+        window.addEventListener('DOMContentLoaded', async () => {
+            const hasActive = await window.dbGetKey?.('activeGameId');
+            if (hasActive == null) {
+                // Auto select 'System' pill if no active game
+                await window.dbSet?.('System'); // store selectedPill for drawer logic
+                document.dispatchEvent(new CustomEvent('pill-clicked', {
+                    bubbles: true
+                }));
+            }
         });
     </script>
 </body>
