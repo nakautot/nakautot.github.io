@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTMX + Tailwind RPG UI</title>
+    <title>Ultimate RPG UI</title>
+    <link rel="icon" type="image/png" href="./favicon.png" />
     <script src="https://unpkg.com/htmx.org@1.9.2"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
@@ -22,7 +23,7 @@
 
     <!-- Sticky Header -->
     <header class="bg-blue-600 text-white p-4 text-2xl font-bold shadow sticky top-0 z-30">
-        RPG Interface
+        Ultimate RPG UI
         <hr />
         <pill-bar></pill-bar>
     </header>
@@ -52,6 +53,8 @@
         <div slot="System" hidden><system-card></system-card></div>
     </side-drawer>
 
+    <script src="./components/storage.js"></script>
+
     <!-- Drawer Scripts -->
     <script src="./components/establishments-card.js"></script>
     <script src="./components/npc-card.js"></script>
@@ -64,7 +67,6 @@
     <script src="./components/attributes-card.js"></script>
     <script src="./components/system-card.js"></script>
 
-    <script src="./components/storage.js"></script>
     <script src="./components/pill-bar.js"></script>
     <script src="./components/info-card.js"></script>
     <script src="./components/side-drawer.js"></script>

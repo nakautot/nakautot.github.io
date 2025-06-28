@@ -1,8 +1,23 @@
-class SystemCard extends HTMLElement {
-  connectedCallback() {
-    this.innerHTML = `<div class="p-4 text-sm text-gray-700">Game settings, save/load options, and debug tools.</div>`;
+(() => {
+  const meta = {
+    name: "System",
+    icon: "⚙️",
+    description: "Game settings, save/load options, and debug tools."
+  };
+
+  class SystemCard extends HTMLElement {
+    connectedCallback() {
+      this.innerHTML = /*html*/`
+        <div class="p-4 text-sm text-gray-700">${meta.description}</div>
+      `;
+    }
   }
-}
-if (!customElements.get('system-card')) {
-  customElements.define('system-card', SystemCard);
-}
+
+  if (window.saveMetadataIfNew) {
+    window.saveMetadataIfNew(meta);
+  }
+
+  if (!customElements.get('system-card')) {
+    customElements.define('system-card', SystemCard);
+  }
+})();

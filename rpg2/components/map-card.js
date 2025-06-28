@@ -1,8 +1,23 @@
-class MapCard extends HTMLElement {
-  connectedCallback() {
-    this.innerHTML = `<div class="p-4 text-sm text-gray-700">Explored areas, unlocked locations, and travel markers.</div>`;
+(() => {
+  const meta = {
+    name: "Map",
+    icon: "🗺️",
+    description: "Explored areas, unlocked locations, and travel markers."
+  };
+
+  class MapCard extends HTMLElement {
+    connectedCallback() {
+      this.innerHTML = /*html*/`
+        <div class="p-4 text-sm text-gray-700">${meta.description}</div>
+      `;
+    }
   }
-}
-if (!customElements.get('map-card')) {
-  customElements.define('map-card', MapCard);
-}
+
+  if (window.saveMetadataIfNew) {
+    window.saveMetadataIfNew(meta);
+  }
+
+  if (!customElements.get('map-card')) {
+    customElements.define('map-card', MapCard);
+  }
+})();
