@@ -59,8 +59,8 @@
         const ts = Date.now();
         const gameEntry = { ts: ts.toString(), name, bio };
 
-        await window.saveGame?.(gameEntry);
-        await window.setActiveGame?.(gameEntry.ts);
+        await window.db.saveGame?.(gameEntry);
+        await window.db.setActiveGame?.(gameEntry.ts);
 
         const introMessage = {
           gameId: Number(gameEntry.ts),
@@ -69,7 +69,7 @@
           type: "response"
         };
 
-        await window.saveMessage?.(introMessage);
+        await window.db.saveMessage?.(introMessage);
 
         document.dispatchEvent(new CustomEvent('game-created', {
           detail: gameEntry,
@@ -80,13 +80,13 @@
       // Handle delete-game event
       document.addEventListener('delete-game', async (e) => {
         const ts = e.detail;
-        const active = await window.dbGetKey?.('activeGameId');
+        const active = await window.db.dbGetKey?.('activeGameId');
 
-        await window.deleteGame?.(ts);
-        await window.deleteMessagesByGameId?.(ts); // ✅ Remove all messages for this game
+        await window.db.deleteGame?.(ts);
+        await window.db.deleteMessagesByGameId?.(ts); // ✅ Remove all messages for this game
 
         if (active === ts) {
-          await window.dbDeleteKey?.('activeGameId');
+          await window.db.dbDeleteKey?.('activeGameId');
         }
 
         document.dispatchEvent(new CustomEvent('game-deleted', {
@@ -99,7 +99,7 @@
       document.addEventListener('load-game', async (e) => {
         const ts = e.detail;
 
-        await window.setActiveGame?.(ts);
+        await window.db.setActiveGame?.(ts);
 
         document.dispatchEvent(new CustomEvent('game-loaded', {
           detail: ts,
@@ -109,7 +109,7 @@
 
       // Handle footer-send event
       document.addEventListener('footer-send', async (e) => {
-        const activeGameId = await window.dbGetKey?.('activeGameId');
+        const activeGameId = await window.db.dbGetKey?.('activeGameId');
         const text = e.detail.message?.trim();
         if (!activeGameId || !text) return;
 
@@ -121,7 +121,7 @@
           type: "request"
         };
 
-        await window.saveMessage?.(message);
+        await window.db.saveMessage?.(message);
 
         document.dispatchEvent(new CustomEvent('game-updated', {
           detail: message,

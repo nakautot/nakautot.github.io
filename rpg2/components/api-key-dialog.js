@@ -9,14 +9,14 @@
       this.saveBtn.addEventListener('click', () => {
         const key = this.input.value.trim();
         if (key) {
-          window.setApiKey?.(key);
+          window.db.setApiKey?.(key);
           this.dialog.classList.add('hidden');
           alert('API key saved!');
         }
       });
 
       window.addEventListener('DOMContentLoaded', async () => {
-        const existingKey = await window.getApiKey?.();
+        const existingKey = await window.db.getApiKey?.();
         if (!existingKey) {
           this.dialog.classList.remove('hidden');
         }

@@ -1,4 +1,7 @@
 (() => {
+  window.db = window.db || {};
+  window.db.version = '1.0.0';
+
   function openDb(callback) {
     const request = indexedDB.open('rpg-db', 1);
     request.onupgradeneeded = function (event) {
@@ -22,7 +25,7 @@
     };
   }
 
-  window.dbSet = function (value) {
+  window.db.dbSet = function (value) {
     openDb(db => {
       const tx = db.transaction('state', 'readwrite');
       tx.objectStore('state').put(value, 'selectedPill');
@@ -30,7 +33,7 @@
     });
   };
 
-  window.dbGet = function () {
+  window.db.dbGet = function () {
     return new Promise(resolve => {
       openDb(db => {
         const tx = db.transaction('state', 'readonly');
@@ -48,7 +51,7 @@
     });
   };
 
-  window.saveMetadataIfNew = function (meta) {
+  window.db.saveMetadataIfNew = function (meta) {
     openDb(db => {
       const tx = db.transaction('metadata', 'readwrite');
       const store = tx.objectStore('metadata');
@@ -62,7 +65,7 @@
     });
   };
 
-  window.getAllMetadata = function () {
+  window.db.getAllMetadata = function () {
     return new Promise(resolve => {
       openDb(db => {
         const tx = db.transaction('metadata', 'readonly');
@@ -80,7 +83,7 @@
     });
   };
 
-  window.setApiKey = function (key) {
+  window.db.setApiKey = function (key) {
     openDb(db => {
       const tx = db.transaction('state', 'readwrite');
       tx.objectStore('state').put(key, 'openai_api_key');
@@ -88,7 +91,7 @@
     });
   };
 
-  window.getApiKey = function () {
+  window.db.getApiKey = function () {
     return new Promise(resolve => {
       openDb(db => {
         const tx = db.transaction('state', 'readonly');
@@ -106,7 +109,7 @@
     });
   };
 
-  window.hasActiveGame = function () {
+  window.db.hasActiveGame = function () {
     return new Promise(resolve => {
       openDb(db => {
         const tx = db.transaction('state', 'readonly');
@@ -118,7 +121,7 @@
     });
   };
 
-  window.saveGame = function (game) {
+  window.db.saveGame = function (game) {
     return new Promise(resolve => {
       openDb(db => {
         if (!db.objectStoreNames.contains('games')) {
@@ -137,7 +140,7 @@
     });
   };
 
-  window.setActiveGame = function (ts) {
+  window.db.setActiveGame = function (ts) {
     openDb(db => {
       const tx = db.transaction('state', 'readwrite');
       const store = tx.objectStore('state');
@@ -146,7 +149,7 @@
     });
   };
 
-  window.dbGetKey = function (key) {
+  window.db.dbGetKey = function (key) {
     return new Promise(function (resolve) {
       openDb(function (db) {
         const tx = db.transaction('state', 'readonly');
@@ -164,7 +167,7 @@
     });
   };
 
-  window.getAllGames = function () {
+  window.db.getAllGames = function () {
     return new Promise((resolve) => {
       openDb(function (db) {
         if (!db.objectStoreNames.contains('games')) {
@@ -190,7 +193,7 @@
     });
   };
 
-  window.deleteGame = function (ts) {
+  window.db.deleteGame = function (ts) {
     return new Promise((resolve) => {
       openDb(function (db) {
         const tx = db.transaction('games', 'readwrite');
@@ -208,7 +211,7 @@
     });
   };
 
-  window.dbDeleteKey = function (key) {
+  window.db.dbDeleteKey = function (key) {
     return new Promise((resolve) => {
       openDb(function (db) {
         const tx = db.transaction('state', 'readwrite');
@@ -226,7 +229,7 @@
     });
   };
 
-  window.saveMessage = function (entry) {
+  window.db.saveMessage = function (entry) {
     openDb(function (db) {
       const tx = db.transaction('messages', 'readwrite');
       const store = tx.objectStore('messages');
@@ -235,7 +238,7 @@
     });
   };
 
-  window.getMessagesForGame = function (gameId) {
+  window.db.getMessagesForGame = function (gameId) {
     return new Promise(resolve => {
       openDb(function (db) {
         const tx = db.transaction('messages', 'readonly');
@@ -256,7 +259,7 @@
     });
   };
 
-  window.deleteMessagesByGameId = function (gameId) {
+  window.db.deleteMessagesByGameId = function (gameId) {
     return new Promise((resolve) => {
       openDb((db) => {
         const tx = db.transaction('messages', 'readwrite');

@@ -71,10 +71,10 @@
       });
 
       const renderGameList = async () => {
-        if (!window.getAllGames) return;
+        if (!window.db.getAllGames) return;
         gameList.innerHTML = '';
 
-        const games = await window.getAllGames();
+        const games = await window.db.getAllGames();
         if (!games.length) {
           const emptyMessage = document.createElement('li');
           emptyMessage.className = 'text-xs text-gray-500 italic';
@@ -121,8 +121,8 @@
     }
   }
 
-  if (window.saveMetadataIfNew) {
-    window.saveMetadataIfNew(meta);
+  if (window.db.saveMetadataIfNew) {
+    window.db.saveMetadataIfNew(meta);
   }
 
   if (!customElements.get('system-card')) {

@@ -1,7 +1,7 @@
 (() => {
   class PillBar extends HTMLElement {
     async connectedCallback() {
-      const categories = await window.getAllMetadata?.();
+      const categories = await window.db.getAllMetadata?.();
       if (!Array.isArray(categories) || categories.length === 0) {
         this.innerHTML = `<div class="text-sm text-gray-400 p-2">No categories found in IndexedDB.</div>`;
         return;
@@ -39,7 +39,7 @@
       this.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', async () => {
           const name = btn.dataset.name;
-          await window.dbSet?.(name);
+          await window.db.dbSet?.(name);
           document.dispatchEvent(new CustomEvent('pill-clicked', {
             bubbles: true
           }));

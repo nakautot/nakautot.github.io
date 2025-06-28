@@ -41,9 +41,9 @@
     <!-- App initialization -->
     <script defer>
         window.addEventListener('DOMContentLoaded', async () => {
-            const hasActive = await window.dbGetKey?.('activeGameId');
+            const hasActive = await window.db.dbGetKey?.('activeGameId');
             if (hasActive == null) {
-                await window.dbSet?.('System');
+                await window.db.dbSet?.('System');
                 document.dispatchEvent(new CustomEvent('pill-clicked', { bubbles: true }));
             }
         });

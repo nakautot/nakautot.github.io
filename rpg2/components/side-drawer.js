@@ -28,7 +28,7 @@ class SideDrawer extends HTMLElement {
 
   async open() {
     this.cacheElements();
-    const selected = await window.dbGet?.();
+    const selected = await window.db.dbGet?.();
     const title = (typeof selected === 'string' && selected) ? selected : 'Selected';
     this.sdTitle.textContent = title;
 
@@ -57,7 +57,7 @@ class SideDrawer extends HTMLElement {
 
   async close() {
     // Prevent closing if no active game exists
-    const hasGame = await window.hasActiveGame?.();
+    const hasGame = await window.db.hasActiveGame?.();
     if (!hasGame) return;
 
     this.drawer.classList.add('translate-x-full');

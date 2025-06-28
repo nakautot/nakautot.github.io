@@ -35,7 +35,7 @@ class FooterBar extends HTMLElement {
   }
 
   async updateEnabledState() {
-    const activeGameId = await window.dbGetKey?.('activeGameId');
+    const activeGameId = await window.db.dbGetKey?.('activeGameId');
     const enabled = !!activeGameId;
 
     this.textarea.disabled = !enabled;

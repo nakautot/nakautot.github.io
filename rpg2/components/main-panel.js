@@ -27,7 +27,7 @@
         async load(reset = false) {
             this.wrapper.innerHTML = '';
 
-            this.activeGameId = await window.dbGetKey?.('activeGameId');
+            this.activeGameId = await window.db.dbGetKey?.('activeGameId');
             if (!this.activeGameId) {
                 this.renderInfoNotice();
                 return;
@@ -54,9 +54,9 @@
         }
 
         async fetchMoreMessages() {
-            if (!window.getMessagesForGame) return;
+            if (!window.db.getMessagesForGame) return;
 
-            const all = await window.getMessagesForGame(this.activeGameId);
+            const all = await window.db.getMessagesForGame(this.activeGameId);
             const sorted = all.sort((a, b) => b.ts - a.ts);
             const nextBatch = sorted.slice(this.loadedCount, this.loadedCount + this.batchSize);
 

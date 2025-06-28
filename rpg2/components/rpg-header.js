@@ -29,9 +29,20 @@
             const titleRow = document.createElement('div');
             titleRow.className = 'flex flex-col md:flex-row md:items-center md:justify-between gap-1';
 
+            const titleGroup = document.createElement('div');
+            titleGroup.className = 'flex items-center gap-2';
+
+            const icon = document.createElement('img');
+            icon.src = './favicon.png';
+            icon.alt = 'RPG Logo';
+            icon.className = 'w-6 h-6';
+
             const title = document.createElement('div');
             title.className = 'text-2xl font-bold';
             title.textContent = 'Ultimate RPG UI';
+
+            titleGroup.appendChild(icon);
+            titleGroup.appendChild(title);
 
             const subtitle = document.createElement('div');
             subtitle.className = 'text-sm text-blue-100 md:text-base';
@@ -39,8 +50,8 @@
             // Lookup active game
             let subtitleText = 'Adventure not yet started';
             try {
-                const activeId = await window.dbGetKey?.('activeGameId');
-                const games = await window.getAllGames?.();
+                const activeId = await window.db.dbGetKey?.('activeGameId');
+                const games = await window.db.getAllGames?.();
                 const activeGame = games?.find(g => g.ts === activeId);
                 if (activeGame?.name) {
                     subtitleText = `${activeGame.name}'s Adventure`;
@@ -50,7 +61,7 @@
             }
 
             subtitle.textContent = subtitleText;
-            titleRow.appendChild(title);
+            titleRow.appendChild(titleGroup);
             titleRow.appendChild(subtitle);
 
             const hr = document.createElement('hr');

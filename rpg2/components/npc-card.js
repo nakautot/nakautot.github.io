@@ -16,8 +16,8 @@
     }
   }
 
-  if (window.saveMetadataIfNew) {
-    window.saveMetadataIfNew(meta);
+  if (window.db.saveMetadataIfNew) {
+    window.db.saveMetadataIfNew(meta);
   }
 
   if (!customElements.get('npc-card')) {
