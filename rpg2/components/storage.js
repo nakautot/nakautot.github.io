@@ -76,7 +76,6 @@
     });
   };
 
-  // Save and get API key
   window.setApiKey = function (key) {
     openDb(db => {
       const tx = db.transaction('state', 'readwrite');
@@ -115,7 +114,6 @@
     });
   };
 
-  // Save a new game entry to 'games' store
   window.saveGame = function (game) {
     return new Promise(resolve => {
       openDb(db => {
@@ -135,7 +133,6 @@
     });
   };
 
-  // Set active game ID
   window.setActiveGame = function (ts) {
     openDb(db => {
       const tx = db.transaction('state', 'readwrite');
@@ -158,6 +155,68 @@
         request.onerror = function () {
           resolve(null);
           db.close();
+        };
+      });
+    });
+  };
+
+  window.getAllGames = function () {
+    return new Promise((resolve) => {
+      openDb(function (db) {
+        if (!db.objectStoreNames.contains('games')) {
+          console.warn("Games store not found in DB.");
+          resolve([]);
+          db.close();
+          return;
+        }
+
+        const tx = db.transaction('games', 'readonly');
+        const store = tx.objectStore('games');
+        const request = store.getAll();
+
+        request.onsuccess = () => {
+          resolve(request.result || []);
+          db.close();
+        };
+        request.onerror = () => {
+          resolve([]);
+          db.close();
+        };
+      });
+    });
+  };
+
+  window.deleteGame = function (ts) {
+    return new Promise((resolve) => {
+      openDb(function (db) {
+        const tx = db.transaction('games', 'readwrite');
+        const store = tx.objectStore('games');
+        store.delete(ts);
+        tx.oncomplete = function () {
+          db.close();
+          resolve();
+        };
+        tx.onerror = function () {
+          db.close();
+          resolve();
+        };
+      });
+    });
+  };
+
+  window.dbDeleteKey = function (key) {
+    return new Promise((resolve) => {
+      openDb(function (db) {
+        const tx = db.transaction('state', 'readwrite');
+        const store = tx.objectStore('state');
+        store.delete(key);
+        tx.oncomplete = function () {
+          db.close();
+          resolve();
+        };
+        tx.onerror = function () {
+          db.close();
+          resolve();
         };
       });
     });
