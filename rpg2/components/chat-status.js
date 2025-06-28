@@ -38,6 +38,18 @@
           bubbles: true
         }));
       });
+
+      // ✅ Handle load-game event
+      document.addEventListener('load-game', async (e) => {
+        const ts = e.detail;
+
+        await window.setActiveGame?.(ts);
+
+        document.dispatchEvent(new CustomEvent('game-loaded', {
+          detail: ts,
+          bubbles: true
+        }));
+      });
     }
   }
 

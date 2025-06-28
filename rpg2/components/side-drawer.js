@@ -11,8 +11,8 @@ class SideDrawer extends HTMLElement {
 
     document.addEventListener('pill-clicked', () => this.open());
 
-    // ✅ Close the drawer when a new game is created
     document.addEventListener('game-created', () => this.close());
+    document.addEventListener('game-loaded', () => this.close());
   }
 
 
