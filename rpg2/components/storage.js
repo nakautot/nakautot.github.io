@@ -19,6 +19,9 @@
         const store = db.createObjectStore('messages', { keyPath: 'ts' });
         store.createIndex('by_gameId', 'gameId', { unique: false });
       }
+      if (!db.objectStoreNames.contains('stats')) {
+        db.createObjectStore('stats', { keyPath: 'shortName' });
+      }
     };
     request.onsuccess = function () {
       callback(request.result);
@@ -283,6 +286,33 @@
         tx.onerror = function () {
           db.close();
           resolve(false);
+        };
+      });
+    });
+  };
+
+  window.db.saveStatsToDb = function (statsArray) {
+    openDb(function (db) {
+      const tx = db.transaction('stats', 'readwrite');
+      const store = tx.objectStore('stats');
+      statsArray.forEach(stat => store.put(stat));
+      tx.oncomplete = () => db.close();
+    });
+  };
+
+  window.db.getAllStats = function () {
+    return new Promise(resolve => {
+      openDb(function (db) {
+        const tx = db.transaction('stats', 'readonly');
+        const store = tx.objectStore('stats');
+        const request = store.getAll();
+        request.onsuccess = () => {
+          resolve(request.result || []);
+          db.close();
+        };
+        request.onerror = () => {
+          resolve([]);
+          db.close();
         };
       });
     });
