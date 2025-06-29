@@ -23,6 +23,9 @@
     { shortName: "INFL", name: "Social Influence", description: "A measure of persuasive power in negotiations, commands, or diplomacy.", type: "derived", formula: "CHA + WIT", icon: "🤝" }
   ];
 
+  const primeDirective = `Do you need any of the following stats to respond to the prompt? ${statsData.map(s => s.shortName).join(', ')}. add "stats" to the response payload containing an array of stats`;
+  const secondaryDirective = `Add "stats" to the response payload containing and object whose key is the stat and the value is the ammount to add/decrement the value of the stat. If no change is needed, do not include the stat in the response.  If the stat does not exists, it will be ignored.`;
+
   function renderSection(title, list) {
     const section = document.createElement('section');
     section.className = 'space-y-2';
@@ -102,6 +105,11 @@
 
   if (window.db?.saveMetadataIfNew) {
     window.db.saveMetadataIfNew(meta);
+  }
+
+  if (window.db?.saveDirective) {
+    window.db.saveDirective('stats', 'prime', primeDirective);
+    window.db.saveDirective('stats', 'secondary', secondaryDirective);
   }
 
   if (!customElements.get('stats-card')) {

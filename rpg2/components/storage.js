@@ -6,21 +6,14 @@
     const request = indexedDB.open('rpg-db', 1);
     request.onupgradeneeded = function (event) {
       const db = event.target.result;
-      if (!db.objectStoreNames.contains('state')) {
-        db.createObjectStore('state');
-      }
-      if (!db.objectStoreNames.contains('metadata')) {
-        db.createObjectStore('metadata', { keyPath: 'name' });
-      }
-      if (!db.objectStoreNames.contains('games')) {
-        db.createObjectStore('games', { keyPath: 'ts' });
-      }
+      if (!db.objectStoreNames.contains('state')) db.createObjectStore('state');
+      if (!db.objectStoreNames.contains('metadata')) db.createObjectStore('metadata', { keyPath: 'name' });
+      if (!db.objectStoreNames.contains('games')) db.createObjectStore('games', { keyPath: 'ts' });
+      if (!db.objectStoreNames.contains('stats')) db.createObjectStore('stats', { keyPath: 'shortName' });
+      if (!db.objectStoreNames.contains('directives')) db.createObjectStore('directives', { keyPath: 'stat' });
       if (!db.objectStoreNames.contains('messages')) {
         const store = db.createObjectStore('messages', { keyPath: 'ts' });
         store.createIndex('by_gameId', 'gameId', { unique: false });
-      }
-      if (!db.objectStoreNames.contains('stats')) {
-        db.createObjectStore('stats', { keyPath: 'shortName' });
       }
     };
     request.onsuccess = function () {
@@ -317,4 +310,29 @@
       });
     });
   };
+
+  window.db.saveDirective = function (stat, type, text) {
+    openDb(db => {
+      const tx = db.transaction('directives', 'readwrite');
+      const store = tx.objectStore('directives');
+
+      const getReq = store.get(stat);
+      getReq.onsuccess = () => {
+        const current = getReq.result || { stat }; // ✅ ensures 'stat' exists
+
+        const existing = Array.isArray(current[type]) ? current[type] : [];
+        if (!existing.includes(text)) {
+          current[type] = [...existing, text];
+          store.put(current); // ✅ object now always includes 'stat'
+        }
+      };
+
+      getReq.onerror = () => {
+        console.error('Failed to get directive:', getReq.error);
+      };
+
+      tx.oncomplete = () => db.close();
+    });
+  };
+
 })();
