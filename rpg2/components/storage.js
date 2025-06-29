@@ -11,6 +11,7 @@
       if (!db.objectStoreNames.contains('games')) db.createObjectStore('games', { keyPath: 'ts' });
       if (!db.objectStoreNames.contains('stats')) db.createObjectStore('stats', { keyPath: 'shortName' });
       if (!db.objectStoreNames.contains('directives')) db.createObjectStore('directives', { keyPath: 'stat' });
+      if (!db.objectStoreNames.contains('NPC')) db.createObjectStore('NPC', { keyPath: 'name' });
       if (!db.objectStoreNames.contains('messages')) {
         const store = db.createObjectStore('messages', { keyPath: 'ts' });
         store.createIndex('by_gameId', 'gameId', { unique: false });
@@ -329,6 +330,26 @@
 
       getReq.onerror = () => {
         console.error('Failed to get directive:', getReq.error);
+      };
+
+      tx.oncomplete = () => db.close();
+    });
+  };
+
+  window.db.addToListIfMissing = function (storeName, item, keyField = 'name') {
+    openDb(db => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const request = store.get(item[keyField]);
+
+      request.onsuccess = () => {
+        if (!request.result) {
+          store.put(item);
+        }
+      };
+
+      request.onerror = () => {
+        console.error(`Failed to check for existing item in ${storeName}`, request.error);
       };
 
       tx.oncomplete = () => db.close();

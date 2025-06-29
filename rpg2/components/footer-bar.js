@@ -58,6 +58,7 @@ class FooterBar extends HTMLElement {
 
     const textarea = document.createElement('textarea');
     textarea.rows = 3;
+    textarea.id = "footer-textarea";
     textarea.placeholder = "Type your message...";
     textarea.className = "flex-1 resize-none border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-300 overflow-y-auto h-24";
 
