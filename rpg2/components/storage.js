@@ -16,26 +16,31 @@
         const store = db.createObjectStore('messages', { keyPath: 'ts' });
         store.createIndex('by_gameId', 'gameId', { unique: false });
       }
+      if (!db.objectStoreNames.contains('Map')) {
+        const store = db.createObjectStore('Map', { keyPath: ['gameId', 'x', 'y'] });
+        store.createIndex('by_gameId', 'gameId', { unique: false });
+        store.createIndex('by_coords', ['x', 'y'], { unique: false });
+      }
     };
     request.onsuccess = function () {
       callback(request.result);
     };
   }
 
-  window.db.dbSet = function (value) {
+  window.db.dbSet = function (value, key = 'selectedPill') {
     openDb(db => {
       const tx = db.transaction('state', 'readwrite');
-      tx.objectStore('state').put(value, 'selectedPill');
+      tx.objectStore('state').put(value, key);
       tx.oncomplete = () => db.close();
     });
   };
 
-  window.db.dbGet = function () {
+  window.db.dbGet = function (key = 'selectedPill') {
     return new Promise(resolve => {
       openDb(db => {
         const tx = db.transaction('state', 'readonly');
         const store = tx.objectStore('state');
-        const req = store.get('selectedPill');
+        const req = store.get(key);
         req.onsuccess = () => {
           resolve(req.result);
           db.close();
@@ -336,24 +341,28 @@
     });
   };
 
-  window.db.addToListIfMissing = function (storeName, item, keyField = 'name') {
+  window.db.addToListIfMissing = function (storeName, item, ...keyFields) {
     openDb(db => {
       const tx = db.transaction(storeName, 'readwrite');
       const store = tx.objectStore(storeName);
-      const request = store.get(item[keyField]);
 
+      let key;
+      if (keyFields.length === 1) {
+        key = item[keyFields[0]];
+      } else {
+        key = keyFields.map(field => item[field]);
+      }
+
+      const request = store.get(key);
       request.onsuccess = () => {
         if (!request.result) {
           store.put(item);
         }
       };
-
       request.onerror = () => {
         console.error(`Failed to check for existing item in ${storeName}`, request.error);
       };
-
       tx.oncomplete = () => db.close();
     });
   };
-
 })();
