@@ -60,6 +60,7 @@
       const value = document.createElement('span');
       value.setAttribute('data-target', stat.shortName);
       value.className = 'font-mono text-sm bg-gray-100 border border-gray-300 rounded px-2 py-0.5 min-w-[2rem] text-center';
+      value.textContent = Math.floor(stat.value);
 
       row.appendChild(label);
       row.appendChild(value);
@@ -72,6 +73,10 @@
 
   class StatsCard extends HTMLElement {
     connectedCallback() {
+      this.render().then(() => {});
+    }
+
+    async render() {
       this.innerHTML = '';
 
       const wrapper = document.createElement('div');
@@ -86,21 +91,31 @@
       `;
       wrapper.appendChild(infoBox);
 
-      const derived = statsData.filter(s => s.type === 'derived');
-      const core = statsData.filter(s => s.type === 'core');
-      const adv = statsData.filter(s => s.type === 'adv');
+      var statsBag = {};
+      const gameId = await window.db?.dbGetKey?.('activeGameId');
+      if (gameId) statsBag = await window.db?.getGameSessionState?.(gameId, 'STATS');
+
+      const baseData = statsData.map(stat => {
+        const value = statsBag?.[stat.shortName] || stat.formula || 0;
+        return {
+          ...stat,
+          value: typeof value === 'number' ? value : eval(stat.formula.replace(/([A-Z]+)/g, 'statsBag["$1"]'))
+        };
+      })
+      const derived = baseData.filter(s => s.type === 'derived');
+      const core = baseData.filter(s => s.type === 'core');
+      const adv = baseData.filter(s => s.type === 'adv');
 
       wrapper.appendChild(renderSection('Derived Stats', derived));
       wrapper.appendChild(renderSection('Core Stats', core));
       wrapper.appendChild(renderSection('Advanced Stats', adv));
 
-      this.appendChild(wrapper);
-
-      // Save stats to IndexedDB
-      if (window.db?.saveStatsToDb) {
-        window.db.saveStatsToDb(statsData);
-      }
+      this.appendChild(wrapper);      
     }
+  }
+
+  if (window.db?.saveStatsToDb) {
+    window.db.saveStatsToDb(statsData);
   }
 
   if (window.db?.saveMetadataIfNew) {
@@ -111,6 +126,35 @@
     window.db.saveDirective('stats', 'prime', primeDirective);
     window.db.saveDirective('stats', 'secondary', secondaryDirective);
   }
+
+  function createWeightedRNG(max) {
+    const weighted = [];
+
+    for (let n = max; n >= 1; n--) {
+      const count = max - n + 1;
+      for (let i = 0; i < count; i++) {
+        weighted.push(n);
+      }
+    }
+
+    return function () {
+      const index = Math.floor(Math.random() * weighted.length);
+      return weighted[index];
+    };
+  }
+
+  window.addEventListener("game-created", (e) => {
+    const gameId = e.detail?.ts;
+    if (!gameId) return;
+
+    const rng = createWeightedRNG(10);
+    const stats = statsData.filter(m => ["core", "adv"].indexOf(m.type) > -1).reduce((prev, stat) => {
+      prev[stat.shortName] = prev[stat.shortName] || rng();
+      return prev;
+    }, {});
+
+    window.db.saveGameSessionState(gameId, "STATS", stats);
+  });
 
   if (!customElements.get('stats-card')) {
     customElements.define('stats-card', StatsCard);

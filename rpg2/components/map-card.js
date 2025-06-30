@@ -5,14 +5,6 @@
     description: "Explored areas, unlocked locations, and travel markers."
   };
 
-  const startingLocation = { 
-    x: 3,
-    y: 3,
-    tag: "village", 
-    name: "The Heart of the Village",
-    description: "A modest but lively gathering place where travelers arrive, stories begin, and the scent of fresh bread mingles with the clang of distant anvils."
-  };
-
   class MapCard extends HTMLElement {
     connectedCallback() {
       this.innerHTML = /*html*/`
@@ -36,14 +28,12 @@
     const gameId = e.detail?.ts;
     if (!gameId) return;
 
-    const entry = { ...startingLocation, gameId };
+    const startTile = {
+      tag: "village",
+      name: "The Heart of the Village",
+      description: "A modest but lively gathering place where travelers arrive, stories begin, and the scent of fresh bread mingles with the clang of distant anvils."
+    };
 
-    if (window.db && window.db.addToListIfMissing) {
-      window.db.addToListIfMissing("Map", entry, "gameId", "x", "y");
-    }
-
-    if (window.db && window.db.dbSet) {
-      window.db.dbSet({ currentX: entry.x, currentY: entry.y, gameId }, "currentMapState");
-    }
+    window.db.saveGameSessionState(gameId, "MAP", {3: {3: startTile}}); //x,y
   });
 })();

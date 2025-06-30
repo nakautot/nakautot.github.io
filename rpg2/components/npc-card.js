@@ -24,14 +24,6 @@
     { "icon": "🧞", "tags": ["djinn", "wishkeeper", "elemental", "lampbound", "tempest lord", "genie", "etherkin", "sandshaper", "smokewalker", "binding spirit"] }
   ];
 
-  const npcPrime = {
-    "x": -1,
-    "y": -1,
-    "name": "The Witness of Shattered Skies",
-    "bio": "A veiled figure who exists between places, haunted by visions they cannot silence. They offer to share their torment, and in doing so, may alter your fate — for better or worse.",
-    "type": "oracle"
-  };
-
   class NpcCard extends HTMLElement {
     connectedCallback() {
       this.innerHTML = /*html*/`
@@ -47,9 +39,19 @@
     window.db.saveMetadataIfNew(meta);
   }
 
-  if (window.db.addToListIfMissing) {
-    window.db.addToListIfMissing("NPC", npcPrime, "name");
-  }
+  window.addEventListener("game-created", (e) => {
+    const gameId = e.detail?.ts;
+    if (!gameId) return;
+
+    const npcPrime = {
+      "x": -1,
+      "y": -1,
+      "name": "The Witness of Shattered Skies",
+      "bio": "A veiled figure who exists between places, haunted by visions they cannot silence. They offer to share their torment, and in doing so, may alter your fate — for better or worse.",
+      "type": "oracle"
+    };
+    window.db.saveGameSessionState(gameId, "NPC", [npcPrime]);
+  });
 
   if (!customElements.get('npc-card')) {
     customElements.define('npc-card', NpcCard);

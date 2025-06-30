@@ -21,6 +21,9 @@
         store.createIndex('by_gameId', 'gameId', { unique: false });
         store.createIndex('by_coords', ['x', 'y'], { unique: false });
       }
+      if (!db.objectStoreNames.contains('gameSessionState')) {
+        db.createObjectStore('gameSessionState', { keyPath: ['gameId', 'store'] });
+      }
     };
     request.onsuccess = function () {
       callback(request.result);
@@ -365,4 +368,31 @@
       tx.oncomplete = () => db.close();
     });
   };
+
+  window.db.saveGameSessionState = function (gameId, store, value) {
+    openDb(db => {
+      const tx = db.transaction('gameSessionState', 'readwrite');
+      const objStore = tx.objectStore('gameSessionState');
+      objStore.put({ gameId, store, value });
+      tx.oncomplete = () => db.close();
+    });
+  };
+  
+  window.db.getGameSessionState = function (gameId, store) {
+  return new Promise(resolve => {
+    openDb(db => {
+      const tx = db.transaction('gameSessionState', 'readonly');
+      const objStore = tx.objectStore('gameSessionState');
+      const req = objStore.get([gameId, store]);
+      req.onsuccess = () => {
+        resolve(req.result?.value ?? null);
+        db.close();
+      };
+      req.onerror = () => {
+        resolve(null);
+        db.close();
+      };
+    });
+  });
+};
 })();
