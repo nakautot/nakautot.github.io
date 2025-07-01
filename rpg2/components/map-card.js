@@ -35,5 +35,6 @@
     };
 
     window.db.saveGameSessionState(gameId, "MAP", {3: {3: startTile}}); //x,y
+    window.db.saveGameSessionState(gameId, "CURRENT_LOCATION", {x: 3, y: 3});
   });
 })();
