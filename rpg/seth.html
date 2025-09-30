@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simple Roblox-Inspired Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #87ceeb; /* sky blue */
+      font-family: sans-serif;
+    }
+    canvas {
+      display: block;
+      background: linear-gradient(#87ceeb 70%, #4caf50 30%);
+    }
+  </style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const groundHeight = 80;
+let keys = {};
+let obstacles = [];
+
+class Player {
+  constructor(img) {
+    this.img = img;
+    this.width = 120;
+    this.height = 160;
+    this.x = 100;
+    this.y = canvas.height - groundHeight - this.height;
+    this.vy = 0;
+    this.jumpPower = -15;
+    this.gravity = 0.7;
+    this.grounded = true;
+  }
+  draw() {
+    ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
+  }
+  update() {
+    if (keys['ArrowUp'] || keys[' ']) {
+      if (this.grounded) {
+        this.vy = this.jumpPower;
+        this.grounded = false;
+      }
+    }
+    this.vy += this.gravity;
+    this.y += this.vy;
+    if (this.y >= canvas.height - groundHeight - this.height) {
+      this.y = canvas.height - groundHeight - this.height;
+      this.vy = 0;
+      this.grounded = true;
+    }
+    this.draw();
+  }
+}
+
+class Obstacle {
+  constructor(x, width, height) {
+    this.x = x;
+    this.width = width;
+    this.height = height;
+    this.y = canvas.height - groundHeight - this.height;
+    this.color = '#d32f2f';
+  }
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+  update(speed) {
+    this.x -= speed;
+    if (this.x + this.width < 0) {
+      this.x = canvas.width + Math.random()*200;
+    }
+    this.draw();
+  }
+}
+
+// Load your sprite
+const playerImg = new Image();
+playerImg.src = './file_00000000af9461f7aa7f7b89c39b24c3.png'; // put this file alongside index.html
+
+let player;
+playerImg.onload = () => {
+  player = new Player(playerImg);
+  startGame();
+};
+
+// Create some obstacles
+function initObstacles() {
+  for (let i=0; i<5; i++) {
+    let width = 40 + Math.random()*30;
+    let height = 40 + Math.random()*60;
+    obstacles.push(new Obstacle(canvas.width + i*300, width, height));
+  }
+}
+
+function drawGround() {
+  ctx.fillStyle = "#4caf50";
+  ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+  ctx.fillStyle = "#333";
+  ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 5);
+}
+
+function startGame() {
+  initObstacles();
+  animate();
+}
+
+function animate() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawGround();
+  obstacles.forEach(ob => ob.update(5));
+  player.update();
+  requestAnimationFrame(animate);
+}
+
+// keyboard listeners
+window.addEventListener('keydown', e => { keys[e.key] = true; });
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  player.y = canvas.height - groundHeight - player.height;
+});
+</script>
+</body>
+</html>
