@@ -55,7 +55,7 @@ function ensureAudioContext() {
   }
 }
 function beep(durationMs = 120, freq = 660) {
-  if (!audioCtx) return; // will initialize on first key press
+  if (!audioCtx) return; // will initialize on first user gesture
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
 
@@ -81,19 +81,22 @@ class Player {
     this.x = 100;
     this.y = canvas.height - groundHeight - this.height;
     this.vy = 0;
-    this.jumpPower = -15;
+    this.jumpPower = -16;
     this.gravity = 0.7;
     this.grounded = true;
   }
   draw() {
     ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
   }
+  jump() {
+    if (this.grounded) {
+      this.vy = this.jumpPower;
+      this.grounded = false;
+    }
+  }
   update() {
     if (keys['ArrowUp'] || keys[' ']) {
-      if (this.grounded) {
-        this.vy = this.jumpPower;
-        this.grounded = false;
-      }
+      this.jump();
     }
     this.vy += this.gravity;
     this.y += this.vy;
@@ -118,17 +121,54 @@ class Obstacle {
     this.color = '#d32f2f';
     this.wasColliding = false; // to detect new collisions
   }
+  drawNoteIcon() {
+    // Draw a simple "notes" icon (page with lines) centered in the obstacle
+    const pad = Math.min(this.width, this.height) * 0.15;
+    const w = this.width - pad * 2;
+    const h = this.height - pad * 2;
+    const x = this.x + pad;
+    const y = this.y + pad;
+
+    // Page background
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x, y, w, h);
+
+    // Folded corner
+    const foldSize = Math.min(w, h) * 0.22;
+    ctx.fillStyle = '#e0e0e0';
+    ctx.beginPath();
+    ctx.moveTo(x + w, y);
+    ctx.lineTo(x + w - foldSize, y);
+    ctx.lineTo(x + w, y + foldSize);
+    ctx.closePath();
+    ctx.fill();
+
+    // Lines on the note
+    ctx.strokeStyle = '#9e9e9e';
+    ctx.lineWidth = Math.max(1, Math.floor(h * 0.03));
+    const lines = 3;
+    for (let i = 1; i <= lines; i++) {
+      const ly = y + (h * (i / (lines + 1)));
+      ctx.beginPath();
+      ctx.moveTo(x + h * 0.12, ly);
+      ctx.lineTo(x + w - h * 0.12, ly);
+      ctx.stroke();
+    }
+  }
   draw() {
+    // Red block
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.width, this.height);
+    // Notes icon
+    this.drawNoteIcon();
   }
   update(speed) {
     this.x -= speed;
     if (this.x + this.width < 0) {
-      // respawn ahead with some random spacing
-      this.x = canvas.width + 200 + Math.random() * 400;
-      this.width = 40 + Math.random() * 30;
-      this.height = 40 + Math.random() * 60;
+      // respawn farther ahead with more generous spacing and shorter blocks
+      this.x = canvas.width + 500 + Math.random() * 700; // wider gaps
+      this.width = 35 + Math.random() * 25; // narrower
+      this.height = 24 + Math.random() * 36; // shorter
       this.y = canvas.height - groundHeight - this.height;
       this.wasColliding = false; // reset collision state
     }
@@ -152,10 +192,13 @@ playerImg.onload = () => {
 /* ---------- Obstacles ---------- */
 function initObstacles() {
   obstacles.length = 0;
-  for (let i = 0; i < 5; i++) {
-    let width = 40 + Math.random() * 30;
-    let height = 40 + Math.random() * 60;
-    obstacles.push(new Obstacle(canvas.width + i * 300, width, height));
+  const count = 4; // slightly fewer obstacles
+  for (let i = 0; i < count; i++) {
+    // Start them far apart
+    let width = 35 + Math.random() * 25;
+    let height = 24 + Math.random() * 36;
+    const gap = 520 + Math.random() * 320; // generous starting gaps
+    obstacles.push(new Obstacle(canvas.width + i * gap, width, height));
   }
 }
 
@@ -175,6 +218,8 @@ function rectsOverlap(a, b) {
 }
 
 /* ---------- Game Loop ---------- */
+const SCROLL_SPEED = 4; // slightly slower to ease difficulty
+
 function startGame() {
   initObstacles();
   animate();
@@ -185,7 +230,7 @@ function animate() {
   drawGround();
 
   // Move/draw obstacles
-  obstacles.forEach(ob => ob.update(5));
+  obstacles.forEach(ob => ob.update(SCROLL_SPEED));
 
   // Update/draw player
   player.update();
@@ -206,19 +251,31 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-/* ---------- Input & Resize ---------- */
-window.addEventListener('keydown', e => {
-  keys[e.key] = true;
-  // Ensure audio can play after a user gesture
+/* ---------- Input (Keyboard + Tap/Click) & Resize ---------- */
+function primeAudio() {
   if (!audioCtx) {
     ensureAudioContext();
-    // Some browsers require an explicit resume
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+}
+
+function handleJumpInput() {
+  primeAudio();
+  player && player.jump();
+}
+
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.key === ' ' || e.key === 'ArrowUp') {
+    handleJumpInput();
   }
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// Pointer covers both mouse and touch on modern browsers
+window.addEventListener('pointerdown', () => {
+  handleJumpInput();
+}, { passive: true });
 
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
