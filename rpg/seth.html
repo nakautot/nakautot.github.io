@@ -43,11 +43,13 @@ canvas.height = window.innerHeight;
 const groundHeight = 80;
 let keys = {};
 let obstacles = [];
+let collectibles = []; // beach balls
 let hitCount = 0;
+let obstacleSpawnCount = 0; // count of total spawns (initial + respawns)
 
 const hitCountEl = document.getElementById('hitCount');
 
-/* ---------- Simple beep via Web Audio ---------- */
+/* ---------- Simple beeps via Web Audio ---------- */
 let audioCtx = null;
 function ensureAudioContext() {
   if (!audioCtx) {
@@ -70,6 +72,28 @@ function beep(durationMs = 120, freq = 660) {
   osc.connect(gain).connect(audioCtx.destination);
   osc.start(now);
   osc.stop(now + durationMs / 1000 + 0.02);
+}
+
+/* A friendlier two-tone chime for beach ball hits */
+function goodChime() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+
+  const tone = (f, start, dur) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = f;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(start);
+    osc.stop(start + dur + 0.02);
+  };
+
+  tone(880,  now,      0.10);
+  tone(1320, now + .1, 0.12);
 }
 
 /* ---------- Entities ---------- */
@@ -95,9 +119,7 @@ class Player {
     }
   }
   update() {
-    if (keys['ArrowUp'] || keys[' ']) {
-      this.jump();
-    }
+    if (keys['ArrowUp'] || keys[' ']) this.jump();
     this.vy += this.gravity;
     this.y += this.vy;
     if (this.y >= canvas.height - groundHeight - this.height) {
@@ -159,11 +181,13 @@ class Obstacle {
   update(speed) {
     this.x -= speed;
     if (this.x + this.width < 0) {
+      // respawn farther ahead with generous spacing/size range
       this.x = canvas.width + 500 + Math.random() * 700;
       this.width = 35 + Math.random() * 25;
       this.height = 24 + Math.random() * 36;
       this.y = canvas.height - groundHeight - this.height;
       this.wasColliding = false;
+      onObstacleSpawn(this.x);
     }
     this.draw();
   }
@@ -172,9 +196,58 @@ class Obstacle {
   }
 }
 
+/* Beach Ball (collectible) */
+class BeachBall {
+  constructor(x, y, r = 22) {
+    this.x = x;
+    this.y = y;
+    this.r = r;
+    this.wasColliding = false;
+    this.collected = false;
+  }
+  draw() {
+    const cx = this.x, cy = this.y, r = this.r;
+
+    // base circle (white)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#222';
+    ctx.stroke();
+
+    // colored pie slices (simple beach ball look)
+    const colors = ['#ff5252', '#ffd54f', '#4fc3f7', '#81c784'];
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.fillStyle = colors[i];
+      ctx.arc(cx, cy, r, (i * Math.PI / 2), ((i + 1) * Math.PI / 2));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // small hub circle
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#222';
+    ctx.stroke();
+  }
+  update(speed) {
+    this.x -= speed;
+    this.draw();
+  }
+  get rect() {
+    return { x: this.x - this.r, y: this.y - this.r, w: this.r * 2, h: this.r * 2 };
+  }
+}
+
 /* ---------- Sprite ---------- */
 const playerImg = new Image();
-playerImg.src = './seth.png.png'; // use your uploaded sprite image
+playerImg.src = './seth.png.png'; // your sprite image
 
 let player;
 playerImg.onload = () => {
@@ -182,15 +255,40 @@ playerImg.onload = () => {
   startGame();
 };
 
+/* ---------- Spawning Helpers ---------- */
+function onObstacleSpawn(xRight) {
+  obstacleSpawnCount++;
+  // For every 10 obstacles spawned, 50% chance to spawn ONE beach ball
+  if (obstacleSpawnCount % 10 === 0 && Math.random() < 0.5) {
+    spawnBeachBall(xRight);
+  }
+}
+
+function spawnBeachBall(xRight) {
+  // place the ball somewhere ahead of the obstacle spawn point
+  const x = Math.max(canvas.width + 200, xRight + 150 + Math.random() * 300);
+  // random height above the ground, but not too high
+  const minAboveGround = 30;
+  const maxAboveGround = Math.min(180, canvas.height - groundHeight - 60);
+  const y = canvas.height - groundHeight - (minAboveGround + Math.random() * maxAboveGround);
+  const r = 20 + Math.random() * 6;
+  collectibles.push(new BeachBall(x, y, r));
+}
+
 /* ---------- Obstacles ---------- */
 function initObstacles() {
   obstacles.length = 0;
+  collectibles.length = 0;
+  obstacleSpawnCount = 0;
+
   const count = 4;
   for (let i = 0; i < count; i++) {
     let width = 35 + Math.random() * 25;
     let height = 24 + Math.random() * 36;
     const gap = 520 + Math.random() * 320;
-    obstacles.push(new Obstacle(canvas.width + i * gap, width, height));
+    const ob = new Obstacle(canvas.width + i * gap, width, height);
+    obstacles.push(ob);
+    onObstacleSpawn(ob.x); // initial spawns count, can trigger ball
   }
 }
 
@@ -209,6 +307,16 @@ function rectsOverlap(a, b) {
          a.y + a.h > b.y;
 }
 
+function circleRectOverlap(circle, rect) {
+  // clamp circle center to rect, then check distance
+  const cx = circle.x, cy = circle.y, r = circle.r;
+  const nearestX = Math.max(rect.x, Math.min(cx, rect.x + rect.w));
+  const nearestY = Math.max(rect.y, Math.min(cy, rect.y + rect.h));
+  const dx = cx - nearestX;
+  const dy = cy - nearestY;
+  return (dx*dx + dy*dy) <= r*r;
+}
+
 /* ---------- Game Loop ---------- */
 const SCROLL_SPEED = 8;
 
@@ -221,18 +329,38 @@ function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawGround();
 
+  // Move/draw obstacles
   obstacles.forEach(ob => ob.update(SCROLL_SPEED));
+
+  // Move/draw collectibles, remove offscreen or collected
+  collectibles.forEach(ball => ball.update(SCROLL_SPEED));
+  collectibles = collectibles.filter(b => !b.collected && (b.x + b.r) > 0);
+
+  // Update/draw player
   player.update();
 
+  // Collisions: obstacles (bad)
   const pRect = player.rect;
   for (const ob of obstacles) {
     const colliding = rectsOverlap(pRect, ob.rect);
     if (colliding && !ob.wasColliding) {
       hitCount++;
       hitCountEl.textContent = String(hitCount);
-      beep();
+      beep(); // bad hit
     }
     ob.wasColliding = colliding;
+  }
+
+  // Collisions: beach balls (good)
+  for (const ball of collectibles) {
+    const colliding = circleRectOverlap(ball, pRect);
+    if (colliding && !ball.wasColliding) {
+      hitCount = Math.max(0, hitCount - 1); // decrease shame
+      hitCountEl.textContent = String(hitCount);
+      goodChime();
+      ball.collected = true; // remove it
+    }
+    ball.wasColliding = colliding;
   }
 
   requestAnimationFrame(animate);
@@ -253,15 +381,11 @@ function handleJumpInput() {
 
 window.addEventListener('keydown', e => {
   keys[e.key] = true;
-  if (e.key === ' ' || e.key === 'ArrowUp') {
-    handleJumpInput();
-  }
+  if (e.key === ' ' || e.key === 'ArrowUp') handleJumpInput();
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 
-window.addEventListener('pointerdown', () => {
-  handleJumpInput();
-}, { passive: true });
+window.addEventListener('pointerdown', () => handleJumpInput(), { passive: true });
 
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
