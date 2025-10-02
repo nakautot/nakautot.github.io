@@ -55,7 +55,7 @@ function ensureAudioContext() {
   }
 }
 function beep(durationMs = 120, freq = 660) {
-  if (!audioCtx) return; // will initialize on first user gesture
+  if (!audioCtx) return;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
 
@@ -119,21 +119,18 @@ class Obstacle {
     this.height = height;
     this.y = canvas.height - groundHeight - this.height;
     this.color = '#d32f2f';
-    this.wasColliding = false; // to detect new collisions
+    this.wasColliding = false;
   }
   drawNoteIcon() {
-    // Draw a simple "notes" icon (page with lines) centered in the obstacle
     const pad = Math.min(this.width, this.height) * 0.15;
     const w = this.width - pad * 2;
     const h = this.height - pad * 2;
     const x = this.x + pad;
     const y = this.y + pad;
 
-    // Page background
     ctx.fillStyle = '#fff';
     ctx.fillRect(x, y, w, h);
 
-    // Folded corner
     const foldSize = Math.min(w, h) * 0.22;
     ctx.fillStyle = '#e0e0e0';
     ctx.beginPath();
@@ -143,7 +140,6 @@ class Obstacle {
     ctx.closePath();
     ctx.fill();
 
-    // Lines on the note
     ctx.strokeStyle = '#9e9e9e';
     ctx.lineWidth = Math.max(1, Math.floor(h * 0.03));
     const lines = 3;
@@ -156,21 +152,18 @@ class Obstacle {
     }
   }
   draw() {
-    // Red block
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.width, this.height);
-    // Notes icon
     this.drawNoteIcon();
   }
   update(speed) {
     this.x -= speed;
     if (this.x + this.width < 0) {
-      // respawn farther ahead with more generous spacing and shorter blocks
-      this.x = canvas.width + 500 + Math.random() * 700; // wider gaps
-      this.width = 35 + Math.random() * 25; // narrower
-      this.height = 24 + Math.random() * 36; // shorter
+      this.x = canvas.width + 500 + Math.random() * 700;
+      this.width = 35 + Math.random() * 25;
+      this.height = 24 + Math.random() * 36;
       this.y = canvas.height - groundHeight - this.height;
-      this.wasColliding = false; // reset collision state
+      this.wasColliding = false;
     }
     this.draw();
   }
@@ -181,7 +174,7 @@ class Obstacle {
 
 /* ---------- Sprite ---------- */
 const playerImg = new Image();
-playerImg.src = './file_00000000af9461f7aa7f7b89c39b24c3.png'; // put this file alongside index.html
+playerImg.src = './seth.png.png'; // use your uploaded sprite image
 
 let player;
 playerImg.onload = () => {
@@ -192,12 +185,11 @@ playerImg.onload = () => {
 /* ---------- Obstacles ---------- */
 function initObstacles() {
   obstacles.length = 0;
-  const count = 4; // slightly fewer obstacles
+  const count = 4;
   for (let i = 0; i < count; i++) {
-    // Start them far apart
     let width = 35 + Math.random() * 25;
     let height = 24 + Math.random() * 36;
-    const gap = 520 + Math.random() * 320; // generous starting gaps
+    const gap = 520 + Math.random() * 320;
     obstacles.push(new Obstacle(canvas.width + i * gap, width, height));
   }
 }
@@ -218,7 +210,7 @@ function rectsOverlap(a, b) {
 }
 
 /* ---------- Game Loop ---------- */
-const SCROLL_SPEED = 8; // slightly slower to ease difficulty
+const SCROLL_SPEED = 8;
 
 function startGame() {
   initObstacles();
@@ -229,21 +221,16 @@ function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawGround();
 
-  // Move/draw obstacles
   obstacles.forEach(ob => ob.update(SCROLL_SPEED));
-
-  // Update/draw player
   player.update();
 
-  // Collision detection + hit handling
   const pRect = player.rect;
   for (const ob of obstacles) {
     const colliding = rectsOverlap(pRect, ob.rect);
     if (colliding && !ob.wasColliding) {
-      // New collision event with this obstacle
       hitCount++;
       hitCountEl.textContent = String(hitCount);
-      beep(); // play sound
+      beep();
     }
     ob.wasColliding = colliding;
   }
@@ -251,7 +238,7 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-/* ---------- Input (Keyboard + Tap/Click) & Resize ---------- */
+/* ---------- Input & Resize ---------- */
 function primeAudio() {
   if (!audioCtx) {
     ensureAudioContext();
@@ -272,7 +259,6 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 
-// Pointer covers both mouse and touch on modern browsers
 window.addEventListener('pointerdown', () => {
   handleJumpInput();
 }, { passive: true });
@@ -283,7 +269,6 @@ window.addEventListener('resize', () => {
   if (player) {
     player.y = canvas.height - groundHeight - player.height;
   }
-  // Re-seat obstacles on new ground height
   obstacles.forEach(ob => {
     ob.y = canvas.height - groundHeight - ob.height;
   });
