@@ -8,16 +8,32 @@
       margin: 0;
       overflow: hidden;
       background: #87ceeb; /* sky blue */
-      font-family: sans-serif;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     }
     canvas {
       display: block;
       background: linear-gradient(#87ceeb 70%, #4caf50 30%);
     }
+    /* Top-right shame counter */
+    #shameCounter {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 10;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      user-select: none;
+    }
   </style>
 </head>
 <body>
-<canvas id="game"></canvas>
+  <div id="shameCounter">Shame Hits: <span id="hitCount">0</span></div>
+  <canvas id="game"></canvas>
+
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -27,7 +43,36 @@ canvas.height = window.innerHeight;
 const groundHeight = 80;
 let keys = {};
 let obstacles = [];
+let hitCount = 0;
 
+const hitCountEl = document.getElementById('hitCount');
+
+/* ---------- Simple beep via Web Audio ---------- */
+let audioCtx = null;
+function ensureAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+function beep(durationMs = 120, freq = 660) {
+  if (!audioCtx) return; // will initialize on first key press
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'square';
+  osc.frequency.value = freq;
+
+  const now = audioCtx.currentTime;
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + durationMs / 1000);
+
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + durationMs / 1000 + 0.02);
+}
+
+/* ---------- Entities ---------- */
 class Player {
   constructor(img) {
     this.img = img;
@@ -59,6 +104,9 @@ class Player {
     }
     this.draw();
   }
+  get rect() {
+    return { x: this.x, y: this.y, w: this.width, h: this.height };
+  }
 }
 
 class Obstacle {
@@ -68,6 +116,7 @@ class Obstacle {
     this.height = height;
     this.y = canvas.height - groundHeight - this.height;
     this.color = '#d32f2f';
+    this.wasColliding = false; // to detect new collisions
   }
   draw() {
     ctx.fillStyle = this.color;
@@ -76,13 +125,21 @@ class Obstacle {
   update(speed) {
     this.x -= speed;
     if (this.x + this.width < 0) {
-      this.x = canvas.width + Math.random()*200;
+      // respawn ahead with some random spacing
+      this.x = canvas.width + 200 + Math.random() * 400;
+      this.width = 40 + Math.random() * 30;
+      this.height = 40 + Math.random() * 60;
+      this.y = canvas.height - groundHeight - this.height;
+      this.wasColliding = false; // reset collision state
     }
     this.draw();
   }
+  get rect() {
+    return { x: this.x, y: this.y, w: this.width, h: this.height };
+  }
 }
 
-// Load your sprite
+/* ---------- Sprite ---------- */
 const playerImg = new Image();
 playerImg.src = './file_00000000af9461f7aa7f7b89c39b24c3.png'; // put this file alongside index.html
 
@@ -92,15 +149,17 @@ playerImg.onload = () => {
   startGame();
 };
 
-// Create some obstacles
+/* ---------- Obstacles ---------- */
 function initObstacles() {
-  for (let i=0; i<5; i++) {
-    let width = 40 + Math.random()*30;
-    let height = 40 + Math.random()*60;
-    obstacles.push(new Obstacle(canvas.width + i*300, width, height));
+  obstacles.length = 0;
+  for (let i = 0; i < 5; i++) {
+    let width = 40 + Math.random() * 30;
+    let height = 40 + Math.random() * 60;
+    obstacles.push(new Obstacle(canvas.width + i * 300, width, height));
   }
 }
 
+/* ---------- Utility ---------- */
 function drawGround() {
   ctx.fillStyle = "#4caf50";
   ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
@@ -108,27 +167,69 @@ function drawGround() {
   ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 5);
 }
 
+function rectsOverlap(a, b) {
+  return a.x < b.x + b.w &&
+         a.x + a.w > b.x &&
+         a.y < b.y + b.h &&
+         a.y + a.h > b.y;
+}
+
+/* ---------- Game Loop ---------- */
 function startGame() {
   initObstacles();
   animate();
 }
 
 function animate() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawGround();
+
+  // Move/draw obstacles
   obstacles.forEach(ob => ob.update(5));
+
+  // Update/draw player
   player.update();
+
+  // Collision detection + hit handling
+  const pRect = player.rect;
+  for (const ob of obstacles) {
+    const colliding = rectsOverlap(pRect, ob.rect);
+    if (colliding && !ob.wasColliding) {
+      // New collision event with this obstacle
+      hitCount++;
+      hitCountEl.textContent = String(hitCount);
+      beep(); // play sound
+    }
+    ob.wasColliding = colliding;
+  }
+
   requestAnimationFrame(animate);
 }
 
-// keyboard listeners
-window.addEventListener('keydown', e => { keys[e.key] = true; });
+/* ---------- Input & Resize ---------- */
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  // Ensure audio can play after a user gesture
+  if (!audioCtx) {
+    ensureAudioContext();
+    // Some browsers require an explicit resume
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+});
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  player.y = canvas.height - groundHeight - player.height;
+  if (player) {
+    player.y = canvas.height - groundHeight - player.height;
+  }
+  // Re-seat obstacles on new ground height
+  obstacles.forEach(ob => {
+    ob.y = canvas.height - groundHeight - ob.height;
+  });
 });
 </script>
 </body>
