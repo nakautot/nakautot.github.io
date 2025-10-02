@@ -43,62 +43,21 @@ canvas.height = window.innerHeight;
 const groundHeight = 80;
 let keys = {};
 let obstacles = [];
+let collectibles = []; // beach balls
 let hitCount = 0;
+let obstacleSpawnCount = 0; // count of total spawns (initial + respawns)
 
 const hitCountEl = document.getElementById('hitCount');
 
-/* ---------- Web Audio with iPhone unlock ---------- */
+/* ---------- Simple beeps via Web Audio ---------- */
 let audioCtx = null;
-let audioUnlocked = false;
-
 function ensureAudioContext() {
   if (!audioCtx) {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new Ctx({ latencyHint: 'interactive' });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
 }
-
-function oneTimeAudioUnlock() {
-  if (audioUnlocked) return;
-  ensureAudioContext();
-
-  // Resume then play a tiny blip to unlock on iOS
-  audioCtx.resume().then(() => {
-    try {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.02, audioCtx.currentTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
-
-      osc.type = 'sine';
-      osc.frequency.value = 880;
-      osc.connect(gain).connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.06);
-      audioUnlocked = true;
-      removeUnlockListeners();
-    } catch (e) {
-      // Ignore; will try again on next gesture
-    }
-  }).catch(() => {});
-}
-
-function addUnlockListeners() {
-  window.addEventListener('pointerdown', oneTimeAudioUnlock, { passive: true });
-  window.addEventListener('touchstart', oneTimeAudioUnlock, { passive: true });
-  window.addEventListener('keydown', oneTimeAudioUnlock);
-}
-function removeUnlockListeners() {
-  window.removeEventListener('pointerdown', oneTimeAudioUnlock);
-  window.removeEventListener('touchstart', oneTimeAudioUnlock);
-  window.removeEventListener('keydown', oneTimeAudioUnlock);
-}
-addUnlockListeners();
-
-async function beep(durationMs = 120, freq = 660) {
+function beep(durationMs = 120, freq = 660) {
   if (!audioCtx) return;
-  try { if (audioCtx.state !== 'running') await audioCtx.resume(); } catch {}
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
 
@@ -106,13 +65,35 @@ async function beep(durationMs = 120, freq = 660) {
   osc.frequency.value = freq;
 
   const now = audioCtx.currentTime;
-  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.setValueAtTime(0.001, now);
   gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + durationMs / 1000);
 
   osc.connect(gain).connect(audioCtx.destination);
   osc.start(now);
   osc.stop(now + durationMs / 1000 + 0.02);
+}
+
+/* A friendlier two-tone chime for beach ball hits */
+function goodChime() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+
+  const tone = (f, start, dur) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = f;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(start);
+    osc.stop(start + dur + 0.02);
+  };
+
+  tone(880,  now,      0.10);
+  tone(1320, now + .1, 0.12);
 }
 
 /* ---------- Entities ---------- */
@@ -138,9 +119,7 @@ class Player {
     }
   }
   update() {
-    if (keys['ArrowUp'] || keys[' ']) {
-      this.jump();
-    }
+    if (keys['ArrowUp'] || keys[' ']) this.jump();
     this.vy += this.gravity;
     this.y += this.vy;
     if (this.y >= canvas.height - groundHeight - this.height) {
@@ -162,21 +141,18 @@ class Obstacle {
     this.height = height;
     this.y = canvas.height - groundHeight - this.height;
     this.color = '#d32f2f';
-    this.wasColliding = false; // to detect new collisions
+    this.wasColliding = false;
   }
   drawNoteIcon() {
-    // Draw a simple "notes" icon (page with lines) centered in the obstacle
     const pad = Math.min(this.width, this.height) * 0.15;
     const w = this.width - pad * 2;
     const h = this.height - pad * 2;
     const x = this.x + pad;
     const y = this.y + pad;
 
-    // Page background
     ctx.fillStyle = '#fff';
     ctx.fillRect(x, y, w, h);
 
-    // Folded corner
     const foldSize = Math.min(w, h) * 0.22;
     ctx.fillStyle = '#e0e0e0';
     ctx.beginPath();
@@ -186,7 +162,6 @@ class Obstacle {
     ctx.closePath();
     ctx.fill();
 
-    // Lines on the note
     ctx.strokeStyle = '#9e9e9e';
     ctx.lineWidth = Math.max(1, Math.floor(h * 0.03));
     const lines = 3;
@@ -199,21 +174,20 @@ class Obstacle {
     }
   }
   draw() {
-    // Red block
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.width, this.height);
-    // Notes icon
     this.drawNoteIcon();
   }
   update(speed) {
     this.x -= speed;
     if (this.x + this.width < 0) {
-      // respawn farther ahead with more generous spacing and shorter blocks
-      this.x = canvas.width + 500 + Math.random() * 700; // wider gaps
-      this.width = 35 + Math.random() * 25; // narrower
-      this.height = 24 + Math.random() * 36; // shorter
+      // respawn farther ahead with generous spacing/size range
+      this.x = canvas.width + 500 + Math.random() * 700;
+      this.width = 35 + Math.random() * 25;
+      this.height = 24 + Math.random() * 36;
       this.y = canvas.height - groundHeight - this.height;
-      this.wasColliding = false; // reset collision state
+      this.wasColliding = false;
+      onObstacleSpawn(this.x);
     }
     this.draw();
   }
@@ -222,9 +196,58 @@ class Obstacle {
   }
 }
 
+/* Beach Ball (collectible) */
+class BeachBall {
+  constructor(x, y, r = 22) {
+    this.x = x;
+    this.y = y;
+    this.r = r;
+    this.wasColliding = false;
+    this.collected = false;
+  }
+  draw() {
+    const cx = this.x, cy = this.y, r = this.r;
+
+    // base circle (white)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#222';
+    ctx.stroke();
+
+    // colored pie slices (simple beach ball look)
+    const colors = ['#ff5252', '#ffd54f', '#4fc3f7', '#81c784'];
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.fillStyle = colors[i];
+      ctx.arc(cx, cy, r, (i * Math.PI / 2), ((i + 1) * Math.PI / 2));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // small hub circle
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#222';
+    ctx.stroke();
+  }
+  update(speed) {
+    this.x -= speed;
+    this.draw();
+  }
+  get rect() {
+    return { x: this.x - this.r, y: this.y - this.r, w: this.r * 2, h: this.r * 2 };
+  }
+}
+
 /* ---------- Sprite ---------- */
 const playerImg = new Image();
-playerImg.src = './file_00000000af9461f7aa7f7b89c39b24c3.png'; // put this file alongside index.html
+playerImg.src = './seth.png.png'; // your sprite image
 
 let player;
 playerImg.onload = () => {
@@ -232,16 +255,40 @@ playerImg.onload = () => {
   startGame();
 };
 
+/* ---------- Spawning Helpers ---------- */
+function onObstacleSpawn(xRight) {
+  obstacleSpawnCount++;
+  // For every 10 obstacles spawned, 50% chance to spawn ONE beach ball
+  if (obstacleSpawnCount % 10 === 0 && Math.random() < 0.5) {
+    spawnBeachBall(xRight);
+  }
+}
+
+function spawnBeachBall(xRight) {
+  // place the ball somewhere ahead of the obstacle spawn point
+  const x = Math.max(canvas.width + 200, xRight + 150 + Math.random() * 300);
+  // random height above the ground, but not too high
+  const minAboveGround = 30;
+  const maxAboveGround = Math.min(180, canvas.height - groundHeight - 60);
+  const y = canvas.height - groundHeight - (minAboveGround + Math.random() * maxAboveGround);
+  const r = 20 + Math.random() * 6;
+  collectibles.push(new BeachBall(x, y, r));
+}
+
 /* ---------- Obstacles ---------- */
 function initObstacles() {
   obstacles.length = 0;
-  const count = 4; // slightly fewer obstacles
+  collectibles.length = 0;
+  obstacleSpawnCount = 0;
+
+  const count = 4;
   for (let i = 0; i < count; i++) {
-    // Start them far apart
     let width = 35 + Math.random() * 25;
     let height = 24 + Math.random() * 36;
-    const gap = 520 + Math.random() * 320; // generous starting gaps
-    obstacles.push(new Obstacle(canvas.width + i * gap, width, height));
+    const gap = 520 + Math.random() * 320;
+    const ob = new Obstacle(canvas.width + i * gap, width, height);
+    obstacles.push(ob);
+    onObstacleSpawn(ob.x); // initial spawns count, can trigger ball
   }
 }
 
@@ -260,8 +307,18 @@ function rectsOverlap(a, b) {
          a.y + a.h > b.y;
 }
 
+function circleRectOverlap(circle, rect) {
+  // clamp circle center to rect, then check distance
+  const cx = circle.x, cy = circle.y, r = circle.r;
+  const nearestX = Math.max(rect.x, Math.min(cx, rect.x + rect.w));
+  const nearestY = Math.max(rect.y, Math.min(cy, rect.y + rect.h));
+  const dx = cx - nearestX;
+  const dy = cy - nearestY;
+  return (dx*dx + dy*dy) <= r*r;
+}
+
 /* ---------- Game Loop ---------- */
-const SCROLL_SPEED = 4; // slightly slower to ease difficulty
+const SCROLL_SPEED = 8;
 
 function startGame() {
   initObstacles();
@@ -275,42 +332,60 @@ function animate() {
   // Move/draw obstacles
   obstacles.forEach(ob => ob.update(SCROLL_SPEED));
 
+  // Move/draw collectibles, remove offscreen or collected
+  collectibles.forEach(ball => ball.update(SCROLL_SPEED));
+  collectibles = collectibles.filter(b => !b.collected && (b.x + b.r) > 0);
+
   // Update/draw player
   player.update();
 
-  // Collision detection + hit handling
+  // Collisions: obstacles (bad)
   const pRect = player.rect;
   for (const ob of obstacles) {
     const colliding = rectsOverlap(pRect, ob.rect);
     if (colliding && !ob.wasColliding) {
-      // New collision event with this obstacle
       hitCount++;
       hitCountEl.textContent = String(hitCount);
-      beep(); // play sound
+      beep(); // bad hit
     }
     ob.wasColliding = colliding;
+  }
+
+  // Collisions: beach balls (good)
+  for (const ball of collectibles) {
+    const colliding = circleRectOverlap(ball, pRect);
+    if (colliding && !ball.wasColliding) {
+      hitCount = Math.max(0, hitCount - 1); // decrease shame
+      hitCountEl.textContent = String(hitCount);
+      goodChime();
+      ball.collected = true; // remove it
+    }
+    ball.wasColliding = colliding;
   }
 
   requestAnimationFrame(animate);
 }
 
-/* ---------- Input (Keyboard + Tap/Click) & Resize ---------- */
+/* ---------- Input & Resize ---------- */
+function primeAudio() {
+  if (!audioCtx) {
+    ensureAudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+}
+
 function handleJumpInput() {
-  oneTimeAudioUnlock();
+  primeAudio();
   player && player.jump();
 }
 
 window.addEventListener('keydown', e => {
   keys[e.key] = true;
-  if (e.key === ' ' || e.key === 'ArrowUp') {
-    handleJumpInput();
-  }
+  if (e.key === ' ' || e.key === 'ArrowUp') handleJumpInput();
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 
-// Cover both mouse and touch; iOS prefers a user gesture before audio
-window.addEventListener('pointerdown', handleJumpInput, { passive: true });
-window.addEventListener('touchstart', handleJumpInput, { passive: true });
+window.addEventListener('pointerdown', () => handleJumpInput(), { passive: true });
 
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
@@ -318,7 +393,6 @@ window.addEventListener('resize', () => {
   if (player) {
     player.y = canvas.height - groundHeight - player.height;
   }
-  // Re-seat obstacles on new ground height
   obstacles.forEach(ob => {
     ob.y = canvas.height - groundHeight - ob.height;
   });
