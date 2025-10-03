@@ -28,10 +28,51 @@
       letter-spacing: 0.3px;
       user-select: none;
     }
+    /* Upper-left pause button */
+    #pauseBtn {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 11;
+      background: rgba(0,0,0,0.65);
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.08s ease;
+    }
+    #pauseBtn:active { transform: scale(0.98); }
+    /* Paused overlay text */
+    #pausedOverlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9;
+      color: #ffffff;
+      font-weight: 800;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      pointer-events: none;
+    }
+    #pausedOverlay.visible { display: flex; }
+    #pausedOverlay span {
+      background: rgba(0,0,0,0.35);
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: clamp(20px, 4vw, 42px);
+      letter-spacing: 0.6px;
+    }
   </style>
 </head>
 <body>
+  <button id="pauseBtn" aria-pressed="false" aria-label="Pause game">Pause</button>
   <div id="shameCounter">Shame Hits: <span id="hitCount">0</span></div>
+  <div id="pausedOverlay"><span>Paused</span></div>
   <canvas id="game"></canvas>
 
 <script>
@@ -46,8 +87,11 @@ let obstacles = [];
 let collectibles = []; // beach balls
 let hitCount = 0;
 let obstacleSpawnCount = 0; // count of total spawns (initial + respawns)
+let isPaused = false;
 
 const hitCountEl = document.getElementById('hitCount');
+const pauseBtn = document.getElementById('pauseBtn');
+const pausedOverlay = document.getElementById('pausedOverlay');
 
 /* ---------- Simple beeps via Web Audio ---------- */
 let audioCtx = null;
@@ -300,6 +344,14 @@ function drawGround() {
   ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 5);
 }
 
+function drawPausedOverlay() {
+  // extra visual hint on canvas (optional)
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
+}
+
 function rectsOverlap(a, b) {
   return a.x < b.x + b.w &&
          a.x + a.w > b.x &&
@@ -322,13 +374,10 @@ const SCROLL_SPEED = 8;
 
 function startGame() {
   initObstacles();
-  animate();
+  loop();
 }
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawGround();
-
+function updateAndRender() {
   // Move/draw obstacles
   obstacles.forEach(ob => ob.update(SCROLL_SPEED));
 
@@ -362,9 +411,49 @@ function animate() {
     }
     ball.wasColliding = colliding;
   }
-
-  requestAnimationFrame(animate);
 }
+
+function renderStaticFrame() {
+  // Draw only the current (non-advanced) frame + overlay
+  obstacles.forEach(ob => ob.draw());
+  collectibles.forEach(ball => ball.draw());
+  player.draw();
+  drawPausedOverlay();
+}
+
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGround();
+
+  if (!isPaused) {
+    updateAndRender();
+  } else {
+    renderStaticFrame();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Pause/Resume ---------- */
+function setPaused(next) {
+  isPaused = next;
+  pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+  pauseBtn.setAttribute('aria-pressed', String(isPaused));
+  pausedOverlay.classList.toggle('visible', isPaused);
+}
+
+pauseBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  setPaused(!isPaused);
+});
+
+window.addEventListener('keydown', (e) => {
+  // Toggle pause with P or Escape
+  if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+    setPaused(!isPaused);
+    return;
+  }
+});
 
 /* ---------- Input & Resize ---------- */
 function primeAudio() {
@@ -375,17 +464,20 @@ function primeAudio() {
 }
 
 function handleJumpInput() {
+  if (isPaused) return; // ignore jump while paused
   primeAudio();
   player && player.jump();
 }
 
 window.addEventListener('keydown', e => {
   keys[e.key] = true;
-  if (e.key === ' ' || e.key === 'ArrowUp') handleJumpInput();
+  if (!isPaused && (e.key === ' ' || e.key === 'ArrowUp')) handleJumpInput();
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 
-window.addEventListener('pointerdown', () => handleJumpInput(), { passive: true });
+window.addEventListener('pointerdown', () => {
+  if (!isPaused) handleJumpInput();
+}, { passive: true });
 
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
