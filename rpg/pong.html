@@ -68,15 +68,18 @@
   // Ball
   const BALL = { x: W/2, y: H/2, r: 7, vx: 0, vy: 0, speed: 6, maxSpeed: 10 };
 
-  // Power-ups
-  let powerUp = null; // {x,y,type,active}
+  // Power-ups: array of {x,y,size,type}
+  let powerUps = [];
   let powerActive = false;
 
   function spawnPowerUp() {
-    if (Math.random() < 0.1) { // 10% chance
-      const type = Math.random() < 0.5 ? "expand" : "shrink";
-      powerUp = { x: W/2-8, y: Math.random()*(H-30)+15, size: 15, type };
-    }
+    const type = Math.random() < 0.5 ? "expand" : "shrink";
+    powerUps.push({
+      x: Math.random() * (W-40) + 20,
+      y: Math.random() * (H-40) + 20,
+      size: 15,
+      type
+    });
   }
 
   function serve(toRight = Math.random() < 0.5) {
@@ -88,7 +91,7 @@
     waitingServe = false;
     msg.textContent = 'P to Pause';
     beep(800,0.15);
-    spawnPowerUp();
+    spawnPowerUp(); // always spawn new power-up
   }
 
   function drawRect(x, y, w, h) { ctx.fillRect(x, y, w, h); }
@@ -115,7 +118,7 @@
     left.y = right.y = (H - P_HEIGHT)/2;
     left.h = right.h = P_HEIGHT;
     BALL.vx = BALL.vy = 0; BALL.x = W/2; BALL.y = H/2;
-    powerUp = null; powerActive = false;
+    powerUps = []; powerActive = false;
     loop();
   }
 
@@ -159,20 +162,22 @@
       collidePaddle(left);
       collidePaddle(right);
 
-      // Power-up collision
-      if (powerUp && !powerActive) {
-        if (Math.abs(BALL.x - powerUp.x) < powerUp.size &&
-            Math.abs(BALL.y - powerUp.y) < powerUp.size) {
-          powerActive = true;
-          if (powerUp.type === "expand") {
-            left.h *= 1.5; right.h *= 1.5;
-            beep(1000,0.2);
-          } else {
-            left.h *= 0.5; right.h *= 0.5;
-            beep(300,0.2);
+      // Power-up collisions
+      if (!powerActive) {
+        powerUps = powerUps.filter(pu => {
+          if (Math.abs(BALL.x - pu.x) < pu.size && Math.abs(BALL.y - pu.y) < pu.size) {
+            powerActive = true;
+            if (pu.type === "expand") {
+              left.h *= 1.5; right.h *= 1.5;
+              beep(1000,0.2);
+            } else {
+              left.h *= 0.5; right.h *= 0.5;
+              beep(300,0.2);
+            }
+            return false; // remove this one
           }
-          powerUp = null;
-        }
+          return true; // keep
+        });
       }
 
       // Scoring
@@ -193,7 +198,7 @@
     BALL.vx = BALL.vy = 0;
     BALL.x = W/2; BALL.y = H/2;
     msg.textContent = 'Point! Press Space to Serve';
-    powerUp = null; // reset powerups after each point
+    // keep existing powerUps on board
     if (left.score >= MAX_SCORE || right.score >= MAX_SCORE) {
       winner = left.score > right.score ? 'Left' : 'Right';
       msg.textContent = `🏆 ${winner} wins! Click Reset to play again.`;
@@ -209,11 +214,12 @@
     drawRect(right.x, right.y, P_WIDTH, right.h);
     drawCircle(BALL.x, BALL.y, BALL.r);
 
-    if (powerUp) {
-      ctx.fillStyle = powerUp.type === "expand" ? "#0f0" : "#f00";
-      ctx.fillRect(powerUp.x-7, powerUp.y-7, powerUp.size, powerUp.size);
-      ctx.fillStyle = '#00ff00';
-    }
+    // Draw all power-ups
+    powerUps.forEach(pu => {
+      ctx.fillStyle = pu.type === "expand" ? "#0f0" : "#f00";
+      ctx.fillRect(pu.x-7, pu.y-7, pu.size, pu.size);
+    });
+    ctx.fillStyle = '#00ff00';
   }
 
   function loop() {
