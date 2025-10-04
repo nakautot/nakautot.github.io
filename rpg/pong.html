@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>PingPong (DOS-like with Power-Ups)</title>
+<title>PingPong (DOS-like with Highscores)</title>
 <style>
   :root { --fg: #00ff00; --bg: #000; }
   html,body { height:100%; margin:0; background:var(--bg); color:var(--fg);
-              font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+              font-family: ui-monospace, monospace; }
   #wrap { display:grid; place-items:center; height:100%; }
   canvas { background: #000; image-rendering: pixelated; border: 2px solid var(--fg); }
   .hud { position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
@@ -16,6 +16,13 @@
           color: var(--fg); opacity: .85; font-size: 14px; text-align:center; }
   .btn  { padding: 2px 8px; border: 1px solid var(--fg); cursor: pointer; user-select:none; }
   .btn:active { transform: translateY(1px); }
+  #highscores {
+    position: fixed; right: 10px; top: 50px;
+    border: 1px solid var(--fg); padding: 6px; font-size: 14px;
+    background: rgba(0,0,0,0.6); max-width:200px;
+  }
+  #highscores h3 { margin: 0 0 6px 0; font-size: 14px; }
+  #highscores ol { margin: 0; padding-left: 18px; }
 </style>
 </head>
 <body>
@@ -26,9 +33,8 @@
     <div class="btn" id="reset">Reset</div>
   </div>
   <canvas id="game" width="800" height="500" aria-label="Pong"></canvas>
-  <div class="msg" id="msg">
-    Controls: Left=W/S • Right=↑/↓ • Space=Serve • P=Pause
-  </div>
+  <div class="msg" id="msg">Controls: Left=W/S • Right=↑/↓ • Space=Serve • P=Pause</div>
+  <div id="highscores"><h3>🏆 High Scores</h3><ol id="scoreList"></ol></div>
 </div>
 
 <script>
@@ -39,6 +45,7 @@
   const rEl = document.getElementById('rScore');
   const msg = document.getElementById('msg');
   const resetBtn = document.getElementById('reset');
+  const scoreList = document.getElementById('scoreList');
   const W = cvs.width, H = cvs.height;
 
   // --- Audio helper ---
@@ -54,35 +61,35 @@
     osc.stop(audioCtx.currentTime + dur);
   }
 
+  // Timer
+  let gameStartTime = null;
+
+  // Highscores
+  function loadScores() {
+    return JSON.parse(localStorage.getItem("pongHighscores") || "[]");
+  }
+  function saveScores(scores) {
+    localStorage.setItem("pongHighscores", JSON.stringify(scores));
+  }
+  function renderScores() {
+    const scores = loadScores();
+    scoreList.innerHTML = scores.map(s => `<li>${s.initials} - ${s.time.toFixed(2)}s</li>`).join("");
+  }
+  renderScores();
+
   // Game state
   let running = true;
   let waitingServe = true;
   let winner = null;
-  const MAX_SCORE = 10;
+  const MAX_SCORE = 5;
 
   // Paddles
   const P_WIDTH = 10, P_HEIGHT = 80, P_SPEED = 6;
-  const BASE_P_HEIGHT = P_HEIGHT;
   const left = { x: 20, y: (H - P_HEIGHT) / 2, vy: 0, score: 0, up:'KeyW', down:'KeyS', h:P_HEIGHT };
   const right= { x: W - 20 - P_WIDTH, y: (H - P_HEIGHT) / 2, vy: 0, score: 0, up:'ArrowUp', down:'ArrowDown', h:P_HEIGHT };
 
   // Ball
   const BALL = { x: W/2, y: H/2, r: 7, vx: 0, vy: 0, speed: 6, maxSpeed: 10 };
-
-  // Power-ups: array of {x,y,size,type}
-  let powerUps = [];
-  let powerActive = false;
-  let effectTimeoutId = null;
-
-  function spawnPowerUp() {
-    const type = Math.random() < 0.5 ? "expand" : "shrink";
-    powerUps.push({
-      x: Math.random() * (W-40) + 20,
-      y: Math.random() * (H-40) + 20,
-      size: 15,
-      type
-    });
-  }
 
   function serve(toRight = Math.random() < 0.5) {
     BALL.x = W/2; BALL.y = H/2;
@@ -93,7 +100,7 @@
     waitingServe = false;
     msg.textContent = 'P to Pause';
     beep(800,0.15);
-    spawnPowerUp(); // always spawn new power-up
+    if (!gameStartTime) gameStartTime = performance.now(); // start timer first serve
   }
 
   function drawRect(x, y, w, h) { ctx.fillRect(x, y, w, h); }
@@ -107,20 +114,7 @@
     if (e.code === 'KeyP') { running = !running; if (running) loop(); }
   });
   window.addEventListener('keyup', (e) => keys.delete(e.code));
-
   resetBtn.addEventListener('click', () => hardReset());
-
-  function clearEffect() {
-    if (effectTimeoutId) {
-      clearTimeout(effectTimeoutId);
-      effectTimeoutId = null;
-    }
-    left.h = BASE_P_HEIGHT;
-    right.h = BASE_P_HEIGHT;
-    left.y = Math.min(left.y, H - left.h);
-    right.y = Math.min(right.y, H - right.h);
-    powerActive = false;
-  }
 
   function hardReset() {
     left.score = right.score = 0;
@@ -129,10 +123,9 @@
     msg.textContent = 'Press Space to Serve';
     waitingServe = true;
     running = true;
-    clearEffect();
-    left.y = right.y = (H - BASE_P_HEIGHT)/2;
+    left.y = right.y = (H - P_HEIGHT)/2;
     BALL.vx = BALL.vy = 0; BALL.x = W/2; BALL.y = H/2;
-    powerUps = [];
+    gameStartTime = null;
     loop();
   }
 
@@ -141,81 +134,39 @@
   function update() {
     left.vy = (keys.has(left.up) ? -P_SPEED : 0) + (keys.has(left.down) ? P_SPEED : 0);
     right.vy= (keys.has(right.up)? -P_SPEED : 0) + (keys.has(right.down)? P_SPEED : 0);
-
     left.y = clamp(left.y + left.vy, 0, H - left.h);
     right.y= clamp(right.y + right.vy, 0, H - right.h);
 
     if (!waitingServe && !winner) {
       BALL.x += BALL.vx;
       BALL.y += BALL.vy;
-
-      // Wall collisions
+      // walls
       if (BALL.y - BALL.r <= 0 && BALL.vy < 0) { BALL.y = BALL.r; BALL.vy *= -1; beep(400,0.08); }
       if (BALL.y + BALL.r >= H && BALL.vy > 0) { BALL.y = H - BALL.r; BALL.vy *= -1; beep(400,0.08); }
 
-      // Paddle collisions
+      // paddle collisions
       const collidePaddle = (p) => {
         if (BALL.y + BALL.r < p.y || BALL.y - BALL.r > p.y + p.h) return false;
-        if (p === left && BALL.x - BALL.r <= p.x + P_WIDTH && BALL.vx < 0 && BALL.x > p.x) {
+        if (p === left && BALL.x - BALL.r <= p.x + P_WIDTH && BALL.vx < 0) {
           BALL.x = p.x + P_WIDTH + BALL.r;
-        } else if (p === right && BALL.x + BALL.r >= p.x && BALL.vx > 0 && BALL.x < p.x + P_WIDTH) {
+        } else if (p === right && BALL.x + BALL.r >= p.x && BALL.vx > 0) {
           BALL.x = p.x - BALL.r;
         } else return false;
-
         const hitPos = ((BALL.y - (p.y + p.h/2)) / (p.h/2));
         const angle = hitPos * (Math.PI/3);
         const dir = p === left ? 1 : -1;
         const speed = Math.min(Math.hypot(BALL.vx, BALL.vy) * 1.05, BALL.maxSpeed);
-
         BALL.vx = dir * speed * Math.cos(angle);
         BALL.vy = speed * Math.sin(angle);
         beep(600,0.1);
         return true;
       };
-
       collidePaddle(left);
       collidePaddle(right);
 
-      // Power-up collisions (apply only if no active effect)
-      if (!powerActive && powerUps.length) {
-        powerUps = powerUps.filter(pu => {
-          if (Math.abs(BALL.x - pu.x) < pu.size && Math.abs(BALL.y - pu.y) < pu.size) {
-            powerActive = true;
-            // apply effect
-            if (pu.type === "expand") {
-              left.h = Math.round(BASE_P_HEIGHT * 1.5);
-              right.h = Math.round(BASE_P_HEIGHT * 1.5);
-              beep(1000,0.2);
-            } else {
-              left.h = Math.round(BASE_P_HEIGHT * 0.5);
-              right.h = Math.round(BASE_P_HEIGHT * 0.5);
-              beep(300,0.2);
-            }
-            // keep paddles inside bounds after resize
-            left.y = Math.min(left.y, H - left.h);
-            right.y = Math.min(right.y, H - right.h);
-
-            // schedule effect end in 2 seconds
-            effectTimeoutId = setTimeout(() => {
-              clearEffect();
-            }, 2000);
-
-            return false; // remove collected power-up
-          }
-          return true; // keep others
-        });
-      }
-
-      // Scoring
-      if (BALL.x < -BALL.r) {
-        rEl.textContent = String(++right.score);
-        pointEnd();
-        beep(200,0.3);
-      } else if (BALL.x > W + BALL.r) {
-        lEl.textContent = String(++left.score);
-        pointEnd();
-        beep(200,0.3);
-      }
+      // scoring
+      if (BALL.x < -BALL.r) { right.score++; rEl.textContent = String(right.score); pointEnd(); beep(200,0.3); }
+      if (BALL.x > W + BALL.r) { left.score++; lEl.textContent = String(left.score); pointEnd(); beep(200,0.3); }
     }
   }
 
@@ -224,11 +175,20 @@
     BALL.vx = BALL.vy = 0;
     BALL.x = W/2; BALL.y = H/2;
     msg.textContent = 'Point! Press Space to Serve';
-    // effects are time-based; no forced reset here (timer will revert if still active)
     if (left.score >= MAX_SCORE || right.score >= MAX_SCORE) {
       winner = left.score > right.score ? 'Left' : 'Right';
       msg.textContent = `🏆 ${winner} wins! Click Reset to play again.`;
       running = false;
+
+      // stop timer, record high score
+      const elapsed = (performance.now() - gameStartTime) / 1000;
+      const initials = prompt(`${winner} wins! Enter initials:`) || "???";
+      let scores = loadScores();
+      scores.push({ initials, time: elapsed });
+      scores.sort((a,b) => a.time - b.time);
+      scores = scores.slice(0,10);
+      saveScores(scores);
+      renderScores();
     }
   }
 
@@ -239,13 +199,6 @@
     drawRect(left.x, left.y, P_WIDTH, left.h);
     drawRect(right.x, right.y, P_WIDTH, right.h);
     drawCircle(BALL.x, BALL.y, BALL.r);
-
-    // Draw all power-ups
-    powerUps.forEach(pu => {
-      ctx.fillStyle = pu.type === "expand" ? "#0f0" : "#f00";
-      ctx.fillRect(pu.x-7, pu.y-7, pu.size, pu.size);
-    });
-    ctx.fillStyle = '#00ff00';
   }
 
   function loop() {
@@ -255,8 +208,7 @@
   }
 
   msg.textContent = 'Press Space to Serve • P to Pause';
-  draw();
-  loop();
+  draw(); loop();
 })();
 </script>
 </body>
