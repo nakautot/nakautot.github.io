@@ -39,14 +39,25 @@
   const rEl = document.getElementById('rScore');
   const msg = document.getElementById('msg');
   const resetBtn = document.getElementById('reset');
-
   const W = cvs.width, H = cvs.height;
+
+  // --- Audio helper ---
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function beep(freq = 440, dur = 0.1) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // low volume
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur);
+  }
 
   // Game state
   let running = true;
   let waitingServe = true;
   let winner = null;
-
   const MAX_SCORE = 10;
 
   // Paddles
@@ -59,13 +70,13 @@
 
   function serve(toRight = Math.random() < 0.5) {
     BALL.x = W/2; BALL.y = H/2;
-    // random launch angle (-30..30 deg) away from vertical walls
     const angle = (Math.random() * 60 - 30) * Math.PI/180;
     const dir = toRight ? 1 : -1;
     BALL.vx = dir * BALL.speed * Math.cos(angle);
     BALL.vy = BALL.speed * Math.sin(angle);
     waitingServe = false;
     msg.textContent = 'P to Pause';
+    beep(800,0.15); // serve beep
   }
 
   function drawRect(x, y, w, h) { ctx.fillRect(x, y, w, h); }
@@ -91,13 +102,12 @@
     running = true;
     left.y = right.y = (H - P_HEIGHT)/2;
     BALL.vx = BALL.vy = 0; BALL.x = W/2; BALL.y = H/2;
-    loop(); // ensure animation resumes
+    loop();
   }
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
   function update() {
-    // Paddle movement
     left.vy = (keys.has(left.up) ? -P_SPEED : 0) + (keys.has(left.down) ? P_SPEED : 0);
     right.vy= (keys.has(right.up)? -P_SPEED : 0) + (keys.has(right.down)? P_SPEED : 0);
 
@@ -105,15 +115,14 @@
     right.y= clamp(right.y + right.vy, 0, H - P_HEIGHT);
 
     if (!waitingServe && !winner) {
-      // Ball movement
       BALL.x += BALL.vx;
       BALL.y += BALL.vy;
 
       // Top/bottom walls
-      if (BALL.y - BALL.r <= 0 && BALL.vy < 0) { BALL.y = BALL.r; BALL.vy *= -1; }
-      if (BALL.y + BALL.r >= H && BALL.vy > 0) { BALL.y = H - BALL.r; BALL.vy *= -1; }
+      if (BALL.y - BALL.r <= 0 && BALL.vy < 0) { BALL.y = BALL.r; BALL.vy *= -1; beep(400,0.08); }
+      if (BALL.y + BALL.r >= H && BALL.vy > 0) { BALL.y = H - BALL.r; BALL.vy *= -1; beep(400,0.08); }
 
-      // Paddle collisions (with deflection based on hit position)
+      // Paddle collisions
       const collidePaddle = (p) => {
         if (BALL.y + BALL.r < p.y || BALL.y - BALL.r > p.y + P_HEIGHT) return false;
         if (p === left && BALL.x - BALL.r <= p.x + P_WIDTH && BALL.vx < 0 && BALL.x > p.x) {
@@ -122,13 +131,14 @@
           BALL.x = p.x - BALL.r;
         } else return false;
 
-        const hitPos = ((BALL.y - (p.y + P_HEIGHT/2)) / (P_HEIGHT/2)); // -1..1
-        const angle = hitPos * (Math.PI/3); // up to 60°
+        const hitPos = ((BALL.y - (p.y + P_HEIGHT/2)) / (P_HEIGHT/2));
+        const angle = hitPos * (Math.PI/3);
         const dir = p === left ? 1 : -1;
         const speed = Math.min(Math.hypot(BALL.vx, BALL.vy) * 1.05, BALL.maxSpeed);
 
         BALL.vx = dir * speed * Math.cos(angle);
         BALL.vy = speed * Math.sin(angle);
+        beep(600,0.1); // paddle hit beep
         return true;
       };
 
@@ -139,14 +149,16 @@
       if (BALL.x < -BALL.r) {
         right.score++; rEl.textContent = String(right.score);
         pointEnd(false);
+        beep(200,0.3); // miss beep
       } else if (BALL.x > W + BALL.r) {
         left.score++; lEl.textContent = String(left.score);
         pointEnd(true);
+        beep(200,0.3); // miss beep
       }
     }
   }
 
-  function pointEnd(leftServesNext) {
+  function pointEnd() {
     waitingServe = true;
     BALL.vx = BALL.vy = 0;
     BALL.x = W/2; BALL.y = H/2;
@@ -161,11 +173,7 @@
   function draw() {
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle = '#00ff00';
-
-    // Center dashed net
     for (let y = 0; y < H; y += 18) drawRect(W/2 - 2, y, 4, 12);
-
-    // Paddles & Ball
     drawRect(left.x, left.y, P_WIDTH, P_HEIGHT);
     drawRect(right.x, right.y, P_WIDTH, P_HEIGHT);
     drawCircle(BALL.x, BALL.y, BALL.r);
@@ -177,7 +185,6 @@
     requestAnimationFrame(loop);
   }
 
-  // Initial frame & message
   msg.textContent = 'Press Space to Serve • P to Pause';
   draw();
   loop();
