@@ -418,13 +418,9 @@
                 <div class="map-container">
                     <h2 style="text-align: center; color: var(--dark-ink); margin-bottom: 15px;">Map of Karnstadt</h2>
                     <div class="map" id="mapCanvas">
-                        <!-- Markers will be added dynamically -->
+                        <!-- Static map image displayed -->
                     </div>
-                    <p class="scroll-hint">Click markers to view location details</p>
-                </div>
-                <div id="mapDetails" class="detail-panel" style="display: none;">
-                    <h2 id="detailTitle">Location Details</h2>
-                    <div id="detailContent"></div>
+                    <p class="scroll-hint">View the Locations tab for detailed information about each area</p>
                 </div>
             </div>
 
@@ -589,65 +585,9 @@
             stats[3].textContent = servicesData.length;
         }
 
-        // Render map
+        // Render map (static image only)
         function renderMap() {
-            const mapCanvas = document.getElementById('mapCanvas');
-            mapCanvas.innerHTML = '';
-
-            locationsData.forEach((location, name) => {
-                const pos = locationPositions[name] || { x: 50, y: 50 };
-                const marker = document.createElement('div');
-                marker.className = 'location-marker';
-                marker.setAttribute('data-name', name);
-                marker.style.left = pos.x + '%';
-                marker.style.top = pos.y + '%';
-                marker.textContent = name.charAt(0);
-                marker.onclick = () => showLocationDetails(name);
-                mapCanvas.appendChild(marker);
-            });
-        }
-
-        // Show location details on map
-        function showLocationDetails(locationName) {
-            const location = locationsData.get(locationName);
-            const detailPanel = document.getElementById('mapDetails');
-            const detailTitle = document.getElementById('detailTitle');
-            const detailContent = document.getElementById('detailContent');
-
-            detailTitle.textContent = locationName;
-            detailContent.innerHTML = `
-                <p style="font-size: 1.1rem; margin-bottom: 15px; font-style: italic;">${location.description}</p>
-                
-                ${location.people.length > 0 ? `
-                    <div style="margin-bottom: 15px;">
-                        <p class="card-label">People:</p>
-                        <ul class="item-list">
-                            ${location.people.map(p => `<li>${p}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-                
-                ${location.facilities.length > 0 ? `
-                    <div style="margin-bottom: 15px;">
-                        <p class="card-label">Facilities:</p>
-                        <ul class="item-list">
-                            ${location.facilities.map(f => `<li>${f}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-                
-                ${location.services.length > 0 ? `
-                    <div>
-                        <p class="card-label">Services:</p>
-                        <ul class="item-list">
-                            ${location.services.map(s => `<li>${s}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-            `;
-
-            detailPanel.style.display = 'block';
-            detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Map is now a static background image, no markers needed
         }
 
         // Render locations grid
@@ -667,11 +607,6 @@
                         <p><span class="card-label">Services:</span> ${location.services.length}</p>
                     </div>
                 `;
-                card.onclick = () => {
-                    showSection('map');
-                    setTimeout(() => showLocationDetails(name), 300);
-                };
-                card.style.cursor = 'pointer';
                 grid.appendChild(card);
             });
         }
