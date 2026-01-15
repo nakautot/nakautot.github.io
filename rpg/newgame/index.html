@@ -214,11 +214,30 @@
             box-shadow: 3px 3px 8px var(--shadow);
             transition: transform 0.3s;
             position: relative;
+            overflow: hidden;
         }
 
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 5px 5px 15px var(--shadow);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border: 2px solid var(--accent);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .card-image:hover {
+            transform: scale(1.05);
+        }
+
+        .person-card .card-image {
+            height: 150px;
         }
 
         .card h3 {
@@ -777,7 +796,14 @@
             locationsData.forEach((location, name) => {
                 const card = document.createElement('div');
                 card.className = 'card';
+                
+                // Get image filename (handle special characters)
+                const imageName = name + '.PNG';
+                const imageUrl = `assets/${encodeURIComponent(imageName)}`;
+                
                 card.innerHTML = `
+                    <img src="${imageUrl}" alt="${name}" class="card-image" onclick="openImageModal('${imageUrl}', '${name.replace(/'/g, "\\'")}')"
+                         onerror="this.style.display='none'">
                     <h3>${name}</h3>
                     <div class="card-content">
                         <p style="font-style: italic; margin-bottom: 10px;">${location.description}</p>
@@ -798,7 +824,10 @@
             // First show detailed personnel if available
             personnelData.forEach((personnel, location) => {
                 const card = document.createElement('div');
-                card.className = 'card';
+                card.className = 'card person-card';
+                
+                const imageName = location + '.PNG';
+                const imageUrl = `assets/${encodeURIComponent(imageName)}`;
                 
                 const personnelHTML = personnel.map(person => `
                     <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--accent);">
@@ -809,6 +838,8 @@
                 `).join('');
                 
                 card.innerHTML = `
+                    <img src="${imageUrl}" alt="${location}" class="card-image" onclick="openImageModal('${imageUrl}', '${location.replace(/'/g, "\\'")}')"
+                         onerror="this.style.display='none'">
                     <h3>${location}</h3>
                     <div class="card-content">
                         ${personnelHTML}
@@ -830,8 +861,14 @@
 
             byLocation.forEach((people, location) => {
                 const card = document.createElement('div');
-                card.className = 'card';
+                card.className = 'card person-card';
+                
+                const imageName = location + '.PNG';
+                const imageUrl = `assets/${encodeURIComponent(imageName)}`;
+                
                 card.innerHTML = `
+                    <img src="${imageUrl}" alt="${location}" class="card-image" onclick="openImageModal('${imageUrl}', '${location.replace(/'/g, "\\'")}')"
+                         onerror="this.style.display='none'">
                     <h3>${location}</h3>
                     <div class="card-content">
                         <ul class="item-list">
@@ -926,6 +963,17 @@
 
         function closeMapModal() {
             document.getElementById('mapModal').classList.remove('active');
+        }
+
+        function openImageModal(imageUrl, title) {
+            const modal = document.getElementById('mapModal');
+            const modalTitle = modal.querySelector('.modal-header h2');
+            const mapImage = document.getElementById('mapImage');
+            
+            modalTitle.textContent = title;
+            mapImage.src = imageUrl;
+            modal.classList.add('active');
+            resetZoom();
         }
 
         function zoomIn() {
