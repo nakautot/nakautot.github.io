@@ -362,6 +362,135 @@
             font-style: italic;
             font-size: 0.9rem;
         }
+
+        .map-toggle-btn {
+            margin-top: 15px;
+            background: var(--accent);
+            color: var(--parchment);
+            border: 2px solid var(--dark-ink);
+            padding: 12px 24px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .map-toggle-btn:hover {
+            background: var(--gold);
+            color: var(--dark-ink);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-content {
+            width: 95%;
+            height: 95%;
+            margin: 2.5% auto;
+            background: var(--dark-parchment);
+            border: 3px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            background: var(--parchment);
+            padding: 15px 20px;
+            border-bottom: 2px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--dark-ink);
+        }
+
+        .close-btn {
+            background: var(--accent);
+            color: var(--parchment);
+            border: 2px solid var(--dark-ink);
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: var(--gold);
+            color: var(--dark-ink);
+            transform: rotate(90deg);
+        }
+
+        .zoom-controls {
+            background: var(--parchment);
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .zoom-controls button {
+            background: var(--accent);
+            color: var(--parchment);
+            border: 2px solid var(--dark-ink);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .zoom-controls button:hover {
+            background: var(--gold);
+            color: var(--dark-ink);
+            transform: scale(1.1);
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: auto;
+            background: var(--dark-parchment);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            position: relative;
+        }
+
+        .modal-body:active {
+            cursor: grabbing;
+        }
+
+        #mapImage {
+            max-width: 100%;
+            max-height: 100%;
+            transition: transform 0.3s;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
@@ -369,11 +498,11 @@
         <header>
             <h1>⚔ Karnstadt ⚔</h1>
             <p class="subtitle">A Town of Shadows and Secrets</p>
+            <button class="map-toggle-btn" onclick="openMapModal()">📜 View Map</button>
         </header>
 
         <nav>
             <button class="nav-btn active" onclick="showSection('overview')">Overview</button>
-            <button class="nav-btn" onclick="showSection('map')">Map</button>
             <button class="nav-btn" onclick="showSection('locations')">Locations</button>
             <button class="nav-btn" onclick="showSection('people')">People</button>
             <button class="nav-btn" onclick="showSection('facilities')">Facilities</button>
@@ -413,17 +542,6 @@
                 </div>
             </div>
 
-            <!-- Map Section -->
-            <div id="map" class="section">
-                <div class="map-container">
-                    <h2 style="text-align: center; color: var(--dark-ink); margin-bottom: 15px;">Map of Karnstadt</h2>
-                    <div class="map" id="mapCanvas">
-                        <!-- Static map image displayed -->
-                    </div>
-                    <p class="scroll-hint">View the Locations tab for detailed information about each area</p>
-                </div>
-            </div>
-
             <!-- Locations Section -->
             <div id="locations" class="section">
                 <h2 style="margin-bottom: 20px; color: var(--dark-ink);">Locations of Karnstadt</h2>
@@ -460,6 +578,24 @@
         <footer>
             Est. Post-Catastrophe • Year Unknown • May the Dusk Guide You
         </footer>
+    </div>
+
+    <!-- Map Modal -->
+    <div id="mapModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Map of Karnstadt</h2>
+                <button class="close-btn" onclick="closeMapModal()">✕</button>
+            </div>
+            <div class="zoom-controls">
+                <button onclick="zoomIn()">🔍+</button>
+                <button onclick="zoomOut()">🔍−</button>
+                <button onclick="resetZoom()">⟲</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <img id="mapImage" src="assets/map.png" alt="Karnstadt Map" draggable="false">
+            </div>
+        </div>
     </div>
 
     <script>
@@ -710,6 +846,81 @@
 
         // Initialize
         loadData();
+
+        // Map modal functionality
+        let currentZoom = 1;
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        function openMapModal() {
+            document.getElementById('mapModal').classList.add('active');
+            resetZoom();
+        }
+
+        function closeMapModal() {
+            document.getElementById('mapModal').classList.remove('active');
+        }
+
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom + 0.25, 3);
+            document.getElementById('mapImage').style.transform = `scale(${currentZoom})`;
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom - 0.25, 0.5);
+            document.getElementById('mapImage').style.transform = `scale(${currentZoom})`;
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            document.getElementById('mapImage').style.transform = 'scale(1)';
+            document.getElementById('modalBody').scrollTop = 0;
+            document.getElementById('modalBody').scrollLeft = 0;
+        }
+
+        // Drag to pan functionality
+        const modalBody = document.getElementById('modalBody');
+        
+        modalBody.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.pageX - modalBody.offsetLeft;
+            startY = e.pageY - modalBody.offsetTop;
+            scrollLeft = modalBody.scrollLeft;
+            scrollTop = modalBody.scrollTop;
+        });
+
+        modalBody.addEventListener('mouseleave', () => {
+            isDragging = false;
+        });
+
+        modalBody.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        modalBody.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX - modalBody.offsetLeft;
+            const y = e.pageY - modalBody.offsetTop;
+            const walkX = (x - startX) * 2;
+            const walkY = (y - startY) * 2;
+            modalBody.scrollLeft = scrollLeft - walkX;
+            modalBody.scrollTop = scrollTop - walkY;
+        });
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeMapModal();
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('mapModal').addEventListener('click', (e) => {
+            if (e.target.id === 'mapModal') {
+                closeMapModal();
+            }
+        });
     </script>
 </body>
 </html>
