@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="favicon.png">
     <title>Karnstadt - A Town of Secrets</title>
     <style>
         * {
@@ -665,6 +666,9 @@
     </div>
 
     <script>
+        // Cache busting - update this when images change
+        const IMAGE_VERSION = '?v=1236780';
+        
         // Data storage
         let locationsData = new Map();
         let peopleData = [];
@@ -846,7 +850,7 @@
                 
                 // Get image filename (handle special characters)
                 const imageName = name + '.PNG';
-                const imageUrl = `assets/${encodeURIComponent(imageName)}`;
+                const imageUrl = `assets/${encodeURIComponent(imageName)}${IMAGE_VERSION}`;
                 
                 card.innerHTML = `
                     <img src="${imageUrl}" alt="${name}" class="card-image" onclick="openImageModal('${imageUrl}', '${name.replace(/'/g, "\\'")}')"
@@ -874,12 +878,12 @@
                 card.className = 'card person-card';
                 
                 const imageName = location + '.PNG';
-                const imageUrl = `assets/${encodeURIComponent(imageName)}`;
+                const imageUrl = `assets/${encodeURIComponent(imageName)}${IMAGE_VERSION}`;
                 
                 const personnelHTML = personnel.map(person => {
                     // Try to find character portrait
                     const portraitName = person.Name + '.PNG';
-                    const portraitUrl = `assets/people/${encodeURIComponent(portraitName)}`;
+                    const portraitUrl = `assets/people/${encodeURIComponent(portraitName)}${IMAGE_VERSION}`;
                     
                     return `
                         <div class="character-entry">
@@ -922,7 +926,7 @@
                 card.className = 'card person-card';
                 
                 const imageName = location + '.PNG';
-                const imageUrl = `assets/${encodeURIComponent(imageName)}`;
+                const imageUrl = `assets/${encodeURIComponent(imageName)}${IMAGE_VERSION}`;
                 
                 card.innerHTML = `
                     <img src="${imageUrl}" alt="${location}" class="card-image" onclick="openImageModal('${imageUrl}', '${location.replace(/'/g, "\\'")}')"
@@ -957,7 +961,7 @@
                 card.className = 'card';
                 
                 const imageName = location + '.PNG';
-                const imageUrl = `assets/${encodeURIComponent(imageName)}`;
+                const imageUrl = `assets/${encodeURIComponent(imageName)}${IMAGE_VERSION}`;
                 
                 card.innerHTML = `
                     <img src="${imageUrl}" alt="${location}" class="card-image" onclick="openImageModal('${imageUrl}', '${location.replace(/'/g, "\\'")}')"
@@ -990,7 +994,12 @@
             byLocation.forEach((services, location) => {
                 const card = document.createElement('div');
                 card.className = 'card';
+                
+                const imageName = location + '.PNG';
+                const imageUrl = `assets/${encodeURIComponent(imageName)}${IMAGE_VERSION}`;
+                
                 card.innerHTML = `
+                    <img src="${imageUrl}" alt="${location}" class="card-image" onclick="openImageModal('${imageUrl}', '${location.replace(/'/g, "\\'")}')" onerror="this.style.display='none'">
                     <h3>${location}</h3>
                     <div class="card-content">
                         <ul class="item-list">
