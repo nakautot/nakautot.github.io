@@ -604,6 +604,7 @@
         let peopleData = [];
         let facilitiesData = [];
         let servicesData = [];
+        let personnelData = new Map(); // Detailed personnel by location
 
         // Map positions for locations (pre-defined for visual layout)
         const locationPositions = {
@@ -655,6 +656,7 @@
         // Load CSV files
         async function loadData() {
             try {
+                // Load base data
                 const [peopleRes, facilitiesRes, servicesRes] = await Promise.all([
                     fetch('data/Karnstadt_People.csv'),
                     fetch('data/Karnstadt_Facilities.csv'),
@@ -664,6 +666,32 @@
                 peopleData = parseCSV(await peopleRes.text());
                 facilitiesData = parseCSV(await facilitiesRes.text());
                 servicesData = parseCSV(await servicesRes.text());
+
+                // Load detailed personnel files
+                const personnelFiles = [
+                    { location: 'Karnstadt Library', file: 'Karnstadt_Library_Personnel.csv' },
+                    { location: 'Baron\'s Manse', file: 'Baron_s_Manse_Personnel.csv' },
+                    { location: 'The Broken Tankard Inn', file: 'Broken_Tankard_Inn_Personnel.csv' },
+                    { location: 'Chapel of Edras', file: 'Chapel_of_Edras_Personnel.csv' },
+                    { location: 'East Gate', file: 'East_Gate_Personnel.csv' },
+                    { location: 'Guard Barracks', file: 'Guard_Barracks_Personnel.csv' },
+                    { location: 'Market Square', file: 'Market_Square_Personnel.csv' },
+                    { location: 'The Old Cemetery', file: 'Old_Cemetery_Personnel.csv' },
+                    { location: 'West Gate', file: 'West_Gate_Personnel.csv' }
+                ];
+
+                // Fetch all personnel files
+                const personnelPromises = personnelFiles.map(async ({ location, file }) => {
+                    try {
+                        const res = await fetch(`data/${file}`);
+                        const data = parseCSV(await res.text());
+                        personnelData.set(location, data);
+                    } catch (error) {
+                        console.log(`No personnel file for ${location}`);
+                    }
+                });
+
+                await Promise.all(personnelPromises);
 
                 processLocationData();
                 renderAll();
@@ -715,8 +743,23 @@
         // Render statistics
         function renderStats() {
             const stats = document.querySelectorAll('.stat-number');
+            
+            // Count personnel from detailed files
+            let totalPersonnel = 0;
+            personnelData.forEach(personnel => {
+                totalPersonnel += personnel.length;
+            });
+            
+            // Add any remaining from basic people data
+            const locationsWithDetails = new Set(personnelData.keys());
+            peopleData.forEach(row => {
+                if (!locationsWithDetails.has(row.Location)) {
+                    totalPersonnel++;
+                }
+            });
+            
             stats[0].textContent = locationsData.size;
-            stats[1].textContent = peopleData.length;
+            stats[1].textContent = totalPersonnel;
             stats[2].textContent = facilitiesData.length;
             stats[3].textContent = servicesData.length;
         }
@@ -752,13 +795,37 @@
             const grid = document.getElementById('peopleGrid');
             grid.innerHTML = '';
 
-            // Group by location
+            // First show detailed personnel if available
+            personnelData.forEach((personnel, location) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                const personnelHTML = personnel.map(person => `
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--accent);">
+                        <div style="font-weight: bold; color: var(--dark-ink); margin-bottom: 3px;">${person.Name}</div>
+                        <div style="font-style: italic; color: var(--accent); font-size: 0.85rem; margin-bottom: 5px;">${person.Role}</div>
+                        <div style="font-size: 0.9rem; line-height: 1.5;">${person.Backstory}</div>
+                    </div>
+                `).join('');
+                
+                card.innerHTML = `
+                    <h3>${location}</h3>
+                    <div class="card-content">
+                        ${personnelHTML}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Then show locations without detailed personnel files
             const byLocation = new Map();
             peopleData.forEach(row => {
-                if (!byLocation.has(row.Location)) {
-                    byLocation.set(row.Location, []);
+                if (!personnelData.has(row.Location)) {
+                    if (!byLocation.has(row.Location)) {
+                        byLocation.set(row.Location, []);
+                    }
+                    byLocation.get(row.Location).push(row.Person);
                 }
-                byLocation.get(row.Location).push(row.Person);
             });
 
             byLocation.forEach((people, location) => {
