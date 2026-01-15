@@ -893,6 +893,19 @@
                         </div>
                     `;
                 }).join('');
+                
+                card.innerHTML = `
+                    <img src="${imageUrl}" alt="${location}" class="card-image" onclick="openImageModal('${imageUrl}', '${location.replace(/'/g, "\\'")}')" 
+                         onerror="this.style.display='none'">
+                    <h3>${location}</h3>
+                    <div class="card-content">
+                        ${personnelHTML}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Then show locations without detailed personnel files
             const byLocation = new Map();
             peopleData.forEach(row => {
                 if (!personnelData.has(row.Location)) {
