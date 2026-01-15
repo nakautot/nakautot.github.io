@@ -240,6 +240,52 @@
             height: 150px;
         }
 
+        .character-entry {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--accent);
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .character-portrait {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border: 2px solid var(--accent);
+            border-radius: 4px;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .character-portrait:hover {
+            transform: scale(1.1);
+        }
+
+        .character-info {
+            flex: 1;
+        }
+
+        .character-name {
+            font-weight: bold;
+            color: var(--dark-ink);
+            margin-bottom: 3px;
+        }
+
+        .character-role {
+            font-style: italic;
+            color: var(--accent);
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .character-backstory {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
         .card h3 {
             color: var(--dark-ink);
             border-bottom: 2px solid var(--accent);
@@ -829,26 +875,24 @@
                 const imageName = location + '.PNG';
                 const imageUrl = `assets/${encodeURIComponent(imageName)}`;
                 
-                const personnelHTML = personnel.map(person => `
-                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--accent);">
-                        <div style="font-weight: bold; color: var(--dark-ink); margin-bottom: 3px;">${person.Name}</div>
-                        <div style="font-style: italic; color: var(--accent); font-size: 0.85rem; margin-bottom: 5px;">${person.Role}</div>
-                        <div style="font-size: 0.9rem; line-height: 1.5;">${person.Backstory}</div>
-                    </div>
-                `).join('');
-                
-                card.innerHTML = `
-                    <img src="${imageUrl}" alt="${location}" class="card-image" onclick="openImageModal('${imageUrl}', '${location.replace(/'/g, "\\'")}')"
-                         onerror="this.style.display='none'">
-                    <h3>${location}</h3>
-                    <div class="card-content">
-                        ${personnelHTML}
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-
-            // Then show locations without detailed personnel files
+                const personnelHTML = personnel.map(person => {
+                    // Try to find character portrait
+                    const portraitName = person.Name + '.PNG';
+                    const portraitUrl = `assets/people/${encodeURIComponent(portraitName)}`;
+                    
+                    return `
+                        <div class="character-entry">
+                            <img src="${portraitUrl}" alt="${person.Name}" class="character-portrait" 
+                                 onclick="openImageModal('${portraitUrl}', '${person.Name.replace(/'/g, "\\'")}')" 
+                                 onerror="this.style.display='none'">
+                            <div class="character-info">
+                                <div class="character-name">${person.Name}</div>
+                                <div class="character-role">${person.Role}</div>
+                                <div class="character-backstory">${person.Backstory}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             const byLocation = new Map();
             peopleData.forEach(row => {
                 if (!personnelData.has(row.Location)) {
