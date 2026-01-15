@@ -955,7 +955,13 @@
             byLocation.forEach((facilities, location) => {
                 const card = document.createElement('div');
                 card.className = 'card';
+                
+                const imageName = location + '.PNG';
+                const imageUrl = `assets/${encodeURIComponent(imageName)}`;
+                
                 card.innerHTML = `
+                    <img src="${imageUrl}" alt="${location}" class="card-image" onclick="openImageModal('${imageUrl}', '${location.replace(/'/g, "\\'")}')"
+                         onerror="this.style.display='none'">
                     <h3>${location}</h3>
                     <div class="card-content">
                         <ul class="item-list">
