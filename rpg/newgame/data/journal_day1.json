@@ -1,0 +1,56 @@
+{
+    "day": 1,
+    "title": "Day 1 — Early Morning to Present",
+    "entries": [
+        {
+            "time": "07:45",
+            "description": "Woke at Broken Tankard Inn. Brana Korr delivered intel re: Vault Watch silence. No signs of forced entry or blood. Assigned to investigate via Roeg.",
+            "people": ["Innkeeper Brana Korr", "Captain Roeg Tharn"],
+            "locations": ["The Broken Tankard Inn"]
+        },
+        {
+            "time": "08:00",
+            "description": "Identified only known parties: Roeg Tharn (Captain), Brana Korr (Innkeeper), Courier Boy (name unknown). Confirmed minimal awareness to avoid public unrest.",
+            "people": ["Captain Roeg Tharn", "Innkeeper Brana Korr"],
+            "locations": []
+        },
+        {
+            "time": "08:10",
+            "description": "Conceived infiltration plan. Smuggled self and Nym Bell (inn server) into Guard Barracks inside two sealed ale barrels. Delivery disguised as ale resupply.",
+            "people": ["Server Nym Bell"],
+            "locations": ["Guard Barracks"]
+        },
+        {
+            "time": "09:20",
+            "description": "Arrival at Guard Barracks. Secured in storage room with no interference. Presumed Roeg compliance.",
+            "people": ["Captain Roeg Tharn"],
+            "locations": ["Guard Barracks"]
+        },
+        {
+            "time": "10:00–22:00",
+            "description": "Waited. No visitors. No breaches.",
+            "people": [],
+            "locations": []
+        },
+        {
+            "time": "22:00",
+            "description": "Emerged. Found: Guard uniforms, short sword, keyring (3 keys), ration stockpile. Nym unaware of true mission until exit.",
+            "people": ["Server Nym Bell"],
+            "locations": []
+        },
+        {
+            "time": "22:13",
+            "description": "Foraged remaining food. Acquired: 1 hardbread (eaten), 1 goat cheese wedge (eaten), 2 apples (1 remaining). Hunger now full.",
+            "people": [],
+            "locations": []
+        },
+        {
+            "time": "22:17",
+            "description": "Began documentation. Current status: disguised, armed, prepared. No signs of external tampering.",
+            "people": [],
+            "locations": []
+        }
+    ],
+    "nextAction": "Proceed to East Vault Watchpost. Objective: Locate missing guards, assess potential Vault activity, retrieve proof.",
+    "nextActionLocations": ["East Gate"]
+}

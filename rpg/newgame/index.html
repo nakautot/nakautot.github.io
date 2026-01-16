@@ -558,6 +558,124 @@
             transition: transform 0.3s;
             user-select: none;
         }
+
+        .journal-day {
+            background: var(--dark-parchment);
+            border: 3px solid var(--accent);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .journal-day-header {
+            background: var(--accent);
+            color: var(--parchment);
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .journal-day-header:hover {
+            background: var(--gold);
+            color: var(--dark-ink);
+        }
+
+        .journal-day-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            border: none;
+            padding: 0;
+        }
+
+        .journal-day-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+            background: var(--parchment);
+        }
+
+        .journal-day.active .journal-day-content {
+            max-height: 5000px;
+            transition: max-height 0.8s ease-in;
+        }
+
+        .journal-entry {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--accent);
+            display: flex;
+            gap: 15px;
+        }
+
+        .journal-entry:last-child {
+            border-bottom: none;
+        }
+
+        .journal-time {
+            font-weight: bold;
+            color: var(--gold);
+            font-family: 'Courier New', monospace;
+            min-width: 100px;
+            flex-shrink: 0;
+        }
+
+        .journal-description {
+            flex: 1;
+            line-height: 1.6;
+        }
+
+        .journal-associations {
+            padding: 20px;
+            background: var(--dark-parchment);
+            border-top: 2px solid var(--accent);
+        }
+
+        .journal-associated-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .journal-associated-item {
+            text-align: center;
+        }
+
+        .journal-associated-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            object-position: top;
+            border: 2px solid var(--accent);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .journal-associated-img:hover {
+            transform: scale(1.1);
+        }
+
+        .journal-associated-name {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            color: var(--dark-ink);
+        }
+
+        .journal-next-action {
+            padding: 20px;
+            background: var(--accent);
+            color: var(--parchment);
+            font-style: italic;
+            border-top: 2px solid var(--dark-ink);
+        }
+
+        .journal-next-action strong {
+            color: var(--gold);
+        }
     </style>
 </head>
 <body>
@@ -571,6 +689,7 @@
         <nav>
             <button class="nav-btn active" onclick="showSection('overview')">Overview</button>
             <button class="nav-btn" onclick="showSection('character')">Character</button>
+            <button class="nav-btn" onclick="showSection('journal')">Journal</button>
             <button class="nav-btn" onclick="showSection('locations')">Locations</button>
             <button class="nav-btn" onclick="showSection('people')">People</button>
             <button class="nav-btn" onclick="showSection('facilities')">Facilities</button>
@@ -618,6 +737,14 @@
                     <div id="characterContent">
                         <div class="loading">Loading character data...</div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Journal Section -->
+            <div id="journal" class="section">
+                <h2 style="margin-bottom: 20px; color: var(--dark-ink);">📔 Journal Entries</h2>
+                <div id="journalGrid">
+                    <div class="loading">Loading journal...</div>
                 </div>
             </div>
 
@@ -697,6 +824,7 @@
         let personnelData = new Map(); // Detailed personnel by location
         let characterData = null; // Main character bio
         let loreData = []; // Location-based lore
+        let journalData = []; // Daily journal entries
 
         // Map positions for locations (pre-defined for visual layout)
         const locationPositions = {
@@ -762,6 +890,15 @@
                 servicesData = parseCSV(await servicesRes.text());
                 characterData = await characterRes.json();
                 loreData = parseCSV(await loreRes.text());
+
+                // Load journal entries
+                try {
+                    const day1Res = await fetch('data/journal_day1.json');
+                    const day1Data = await day1Res.json();
+                    journalData.push(day1Data);
+                } catch (error) {
+                    console.log('No journal data available');
+                }
 
                 // Load detailed personnel files
                 const personnelFiles = [
@@ -1213,11 +1350,126 @@
             });
         }
 
+        // Render journal entries
+        function renderJournal() {
+            const grid = document.getElementById('journalGrid');
+            grid.innerHTML = '';
+
+            if (journalData.length === 0) {
+                grid.innerHTML = '<div class="loading">No journal entries yet.</div>';
+                return;
+            }
+
+            journalData.forEach(day => {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'journal-day';
+                
+                // Collect all unique people and locations mentioned in the day
+                const allPeople = new Set();
+                const allLocations = new Set();
+                day.entries.forEach(entry => {
+                    entry.people.forEach(p => allPeople.add(p));
+                    entry.locations.forEach(l => allLocations.add(l));
+                });
+                if (day.nextActionLocations) {
+                    day.nextActionLocations.forEach(l => allLocations.add(l));
+                }
+
+                // Build entries HTML
+                const entriesHTML = day.entries.map(entry => `
+                    <div class="journal-entry">
+                        <div class="journal-time">⏰ ${entry.time}</div>
+                        <div class="journal-description">${entry.description}</div>
+                    </div>
+                `).join('');
+
+                // Build people associations
+                const peopleHTML = Array.from(allPeople).map(personName => {
+                    const imageName = personName + '.PNG';
+                    const imageUrl = `assets/people/${encodeURIComponent(imageName)}${IMAGE_VERSION}`;
+                    return `
+                        <div class="journal-associated-item">
+                            <img src="${imageUrl}" 
+                                 alt="${personName}" 
+                                 class="journal-associated-img"
+                                 onclick="openImageModal('${imageUrl}', '${personName.replace(/'/g, "\\'")}')"
+                                 onerror="this.style.display='none'">
+                            <div class="journal-associated-name">${personName}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Build location associations
+                const locationsHTML = Array.from(allLocations).map(locationName => {
+                    const imageName = locationName + '.PNG';
+                    const imageUrl = `assets/${encodeURIComponent(imageName)}${IMAGE_VERSION}`;
+                    return `
+                        <div class="journal-associated-item">
+                            <img src="${imageUrl}" 
+                                 alt="${locationName}" 
+                                 class="journal-associated-img"
+                                 onclick="openImageModal('${imageUrl}', '${locationName.replace(/'/g, "\\'")}')"
+                                 onerror="this.style.display='none'">
+                            <div class="journal-associated-name">${locationName}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                dayDiv.innerHTML = `
+                    <div class="journal-day-header" onclick="toggleJournalDay(this)">
+                        <h3>📅 ${day.title}</h3>
+                        <span style="font-size: 1.5rem;">▼</span>
+                    </div>
+                    <div class="journal-day-content">
+                        ${entriesHTML}
+                        ${(peopleHTML || locationsHTML) ? `
+                        <div class="journal-associations">
+                            ${peopleHTML ? `
+                            <h4 style="color: var(--dark-ink); margin-bottom: 10px;">📋 People Involved</h4>
+                            <div class="journal-associated-grid">
+                                ${peopleHTML}
+                            </div>
+                            ` : ''}
+                            ${locationsHTML ? `
+                            <h4 style="color: var(--dark-ink); margin: ${peopleHTML ? '20px' : '0'} 0 10px;">📍 Locations Visited</h4>
+                            <div class="journal-associated-grid">
+                                ${locationsHTML}
+                            </div>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+                        ${day.nextAction ? `
+                        <div class="journal-next-action">
+                            <strong>Next Action:</strong> ${day.nextAction}
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                grid.appendChild(dayDiv);
+            });
+
+            // Auto-expand the first (most recent) day
+            const firstDay = grid.querySelector('.journal-day');
+            if (firstDay) {
+                firstDay.classList.add('active');
+            }
+        }
+
+        // Toggle journal day expansion
+        function toggleJournalDay(header) {
+            const dayDiv = header.parentElement;
+            dayDiv.classList.toggle('active');
+            const arrow = header.querySelector('span');
+            arrow.textContent = dayDiv.classList.contains('active') ? '▲' : '▼';
+        }
+
         // Render all sections
         function renderAll() {
             renderStats();
             renderMap();
             renderCharacter();
+            renderJournal();
             renderLocations();
             renderPeople();
             renderFacilities();
