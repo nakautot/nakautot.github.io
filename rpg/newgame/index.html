@@ -570,10 +570,12 @@
 
         <nav>
             <button class="nav-btn active" onclick="showSection('overview')">Overview</button>
+            <button class="nav-btn" onclick="showSection('character')">Character</button>
             <button class="nav-btn" onclick="showSection('locations')">Locations</button>
             <button class="nav-btn" onclick="showSection('people')">People</button>
             <button class="nav-btn" onclick="showSection('facilities')">Facilities</button>
             <button class="nav-btn" onclick="showSection('services')">Services</button>
+            <button class="nav-btn" onclick="showSection('lore')">Lore</button>
         </nav>
 
         <div class="content">
@@ -609,6 +611,16 @@
                 </div>
             </div>
 
+            <!-- Character Section -->
+            <div id="character" class="section">
+                <div class="detail-panel">
+                    <h2 id="charName">Loading Character...</h2>
+                    <div id="characterContent">
+                        <div class="loading">Loading character data...</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Locations Section -->
             <div id="locations" class="section">
                 <h2 style="margin-bottom: 20px; color: var(--dark-ink);">Locations of Karnstadt</h2>
@@ -638,6 +650,14 @@
                 <h2 style="margin-bottom: 20px; color: var(--dark-ink);">Services Available</h2>
                 <div class="data-grid" id="servicesGrid">
                     <div class="loading">Loading services...</div>
+                </div>
+            </div>
+
+            <!-- Lore Section -->
+            <div id="lore" class="section">
+                <h2 style="margin-bottom: 20px; color: var(--dark-ink);">Lore & Mysteries</h2>
+                <div class="data-grid" id="loreGrid">
+                    <div class="loading">Loading lore...</div>
                 </div>
             </div>
         </div>
@@ -675,6 +695,8 @@
         let facilitiesData = [];
         let servicesData = [];
         let personnelData = new Map(); // Detailed personnel by location
+        let characterData = null; // Main character bio
+        let loreData = []; // Location-based lore
 
         // Map positions for locations (pre-defined for visual layout)
         const locationPositions = {
@@ -727,15 +749,19 @@
         async function loadData() {
             try {
                 // Load base data
-                const [peopleRes, facilitiesRes, servicesRes] = await Promise.all([
+                const [peopleRes, facilitiesRes, servicesRes, characterRes, loreRes] = await Promise.all([
                     fetch('data/Karnstadt_People.csv'),
                     fetch('data/Karnstadt_Facilities.csv'),
-                    fetch('data/Karnstadt_Services.csv')
+                    fetch('data/Karnstadt_Services.csv'),
+                    fetch('data/ori_character_bio.json'),
+                    fetch('data/lore/vaults_location_lore.csv')
                 ]);
 
                 peopleData = parseCSV(await peopleRes.text());
                 facilitiesData = parseCSV(await facilitiesRes.text());
                 servicesData = parseCSV(await servicesRes.text());
+                characterData = await characterRes.json();
+                loreData = parseCSV(await loreRes.text());
 
                 // Load detailed personnel files
                 const personnelFiles = [
@@ -1011,14 +1037,192 @@
             });
         }
 
+        // Render character sheet
+        function renderCharacter() {
+            if (!characterData) return;
+            
+            document.getElementById('charName').textContent = `${characterData.Name} - Character Sheet`;
+            
+            const content = document.getElementById('characterContent');
+            content.innerHTML = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <img src="assets/people/Ori.png${IMAGE_VERSION}" 
+                         alt="${characterData.Name}" 
+                         style="max-width: 300px; width: 100%; height: auto; border: 3px solid var(--accent); box-shadow: 0 4px 12px var(--shadow); cursor: pointer;"
+                         onclick="openImageModal('assets/people/Ori.png${IMAGE_VERSION}', '${characterData.Name}')">
+                </div>
+
+                <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-box">
+                        <span class="stat-label">Age</span>
+                        <span class="stat-number" style="font-size: 2rem;">${characterData.Age}</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Gender</span>
+                        <span class="stat-number" style="font-size: 2rem;">${characterData.Gender}</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Role</span>
+                        <span class="stat-number" style="font-size: 1.5rem;">${characterData.Role}</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Origin</span>
+                        <span class="stat-number" style="font-size: 2rem;">${characterData.Origin}</span>
+                    </div>
+                </div>
+
+                <div class="card-content" style="margin-bottom: 20px;">
+                    <p><span class="card-label">Location:</span> ${characterData.Location}</p>
+                    <p><span class="card-label">Residence:</span> ${characterData.Residence}</p>
+                </div>
+
+                <h3 style="color: var(--dark-ink); margin: 20px 0 10px;">Statistics</h3>
+                <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-box">
+                        <span class="stat-label">Health</span>
+                        <span class="stat-number" style="font-size: 1.8rem;">${characterData.Stats.Health}</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Hunger</span>
+                        <span class="stat-number" style="font-size: 1.8rem;">${characterData.Stats.Hunger}</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Money</span>
+                        <span class="stat-number" style="font-size: 1.8rem;">${characterData.Stats.Money}</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Initiative</span>
+                        <span class="stat-number" style="font-size: 1.8rem;">${characterData.Stats.Initiative}</span>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--dark-ink); margin: 20px 0 10px;">Traits</h3>
+                <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-box">
+                        <span class="stat-label">Strength</span>
+                        <span class="stat-number" style="font-size: 1.8rem;">${characterData.Stats.Traits.Strength}</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Intelligence</span>
+                        <span class="stat-number" style="font-size: 1.8rem;">${characterData.Stats.Traits.Intelligence}</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Agility</span>
+                        <span class="stat-number" style="font-size: 1.8rem;">${characterData.Stats.Traits.Agility}</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Charisma</span>
+                        <span class="stat-number" style="font-size: 1.8rem;">${characterData.Stats.Traits.Charisma}</span>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--dark-ink); margin: 20px 0 10px;">Reputation</h3>
+                <div class="card-content" style="margin-bottom: 20px;">
+                    <p><span class="card-label">General Perception:</span> ${characterData.Reputation['General Perception']}</p>
+                    <p style="margin-top: 15px;"><span class="card-label">Guard Trust:</span></p>
+                    <ul class="item-list">
+                        ${characterData.Reputation['Guard Trust'].map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                    <p style="margin-top: 15px;"><span class="card-label">Civic Respect:</span></p>
+                    <ul class="item-list">
+                        ${characterData.Reputation['Civic Respect'].map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <h3 style="color: var(--dark-ink); margin: 20px 0 10px;">Confirmed Past Actions</h3>
+                <ul class="item-list" style="margin-bottom: 20px;">
+                    ${characterData['Confirmed Past Actions'].map(action => `<li>${action}</li>`).join('')}
+                </ul>
+
+                <h3 style="color: var(--dark-ink); margin: 20px 0 10px;">Current Status</h3>
+                <div class="card-content">
+                    <p><span class="card-label">Relationship with Guard:</span> ${characterData['Current Status']['Relationship with Guard']}</p>
+                    <p><span class="card-label">Relationship with Inn:</span> ${characterData['Current Status']['Relationship with Inn']}</p>
+                    <p><span class="card-label">Perception:</span> ${characterData['Current Status'].Perception}</p>
+                    <p><span class="card-label">Public Awareness:</span> ${characterData['Current Status']['Public Awareness']}</p>
+                </div>
+            `;
+        }
+
+        // Render lore grid
+        function renderLore() {
+            const grid = document.getElementById('loreGrid');
+            grid.innerHTML = '';
+
+            loreData.forEach(lore => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                const imageName = lore.Location + '.PNG';
+                const imageUrl = `assets/${encodeURIComponent(imageName)}${IMAGE_VERSION}`;
+                
+                card.innerHTML = `
+                    <img src="${imageUrl}" 
+                         alt="${lore.Location}" 
+                         class="card-image" 
+                         onclick="openImageModal('${imageUrl}', '${lore.Location}')"
+                         onerror="this.style.display='none'">
+                    <h3>${lore.Location}</h3>
+                    <div class="card-content">
+                        <p><span class="card-label">Type:</span> ${lore.Type}</p>
+                        <p><span class="card-label">Status:</span> ${lore.Status}</p>
+                        <p><span class="card-label">Origin:</span> ${lore.Origin}</p>
+                        
+                        ${lore['Known Events'] ? `
+                        <p style="margin-top: 15px;"><span class="card-label">Known Events:</span></p>
+                        <p style="font-size: 0.9rem; line-height: 1.5;">${lore['Known Events']}</p>
+                        ` : ''}
+                        
+                        ${lore.Phenomena ? `
+                        <p style="margin-top: 15px;"><span class="card-label">Phenomena:</span></p>
+                        <p style="font-size: 0.9rem; line-height: 1.5;">${lore.Phenomena}</p>
+                        ` : ''}
+                        
+                        ${lore['Public Perception'] ? `
+                        <p style="margin-top: 15px;"><span class="card-label">Public Perception:</span></p>
+                        <p style="font-size: 0.9rem; line-height: 1.5;">${lore['Public Perception']}</p>
+                        ` : ''}
+                        
+                        ${lore['Associated Phrases'] ? `
+                        <p style="margin-top: 15px;"><span class="card-label">Associated Phrases:</span></p>
+                        <p style="font-size: 0.9rem; font-style: italic; color: var(--accent);">${lore['Associated Phrases']}</p>
+                        ` : ''}
+                        
+                        ${lore['Related Edicts or Laws'] ? `
+                        <p style="margin-top: 15px;"><span class="card-label">Related Edicts:</span></p>
+                        <p style="font-size: 0.9rem; line-height: 1.5;">${lore['Related Edicts or Laws']}</p>
+                        ` : ''}
+                        
+                        ${lore['Access Points'] ? `
+                        <p style="margin-top: 15px;"><span class="card-label">Access Points:</span></p>
+                        <p style="font-size: 0.9rem; line-height: 1.5;">${lore['Access Points']}</p>
+                        ` : ''}
+                        
+                        ${lore['Rumors and Myths'] ? `
+                        <p style="margin-top: 15px;"><span class="card-label">Rumors & Myths:</span></p>
+                        <p style="font-size: 0.9rem; line-height: 1.5; font-style: italic;">${lore['Rumors and Myths']}</p>
+                        ` : ''}
+                        
+                        ${lore['Last Known Activity'] ? `
+                        <p style="margin-top: 15px;"><span class="card-label">Last Known Activity:</span></p>
+                        <p style="font-size: 0.9rem; line-height: 1.5; color: var(--accent); font-weight: bold;">${lore['Last Known Activity']}</p>
+                        ` : ''}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
         // Render all sections
         function renderAll() {
             renderStats();
             renderMap();
+            renderCharacter();
             renderLocations();
             renderPeople();
             renderFacilities();
             renderServices();
+            renderLore();
         }
 
         // Initialize
