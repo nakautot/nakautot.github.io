@@ -200,6 +200,31 @@
       margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    #url-list-section {
+      margin-bottom: 16px;
+    }
+    #url-list-section h2 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .url-list-item {
+      font-size: 12px;
+      padding: 4px 0;
+      border-bottom: 1px solid #21262d;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .url-list-item a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
+    .url-list-item a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -216,6 +241,10 @@
   </div>
 
   <div id="status"></div>
+  <div id="url-list-section" hidden>
+    <h2>Unknown-type URLs</h2>
+    <div id="url-list"></div>
+  </div>
   <div class="grid" id="grid"></div>
 
   <!-- Modal -->
@@ -234,6 +263,8 @@
     const loadBtn   = document.getElementById('loadBtn');
     const grid      = document.getElementById('grid');
     const status    = document.getElementById('status');
+    const urlListSection = document.getElementById('url-list-section');
+    const urlList   = document.getElementById('url-list');
     const modal     = document.getElementById('modal');
     const modalWrap = document.getElementById('modal-media-wrap');
     const modalUrl  = document.getElementById('modal-url');
@@ -275,6 +306,7 @@
 
     // Try to detect media type via HTTP HEAD + Content-Type header.
     // Works for same-origin and CORS-enabled servers; throws (caught) otherwise.
+    // Returns 'image', 'video', 'unknown' (data returned but type unrecognised), or null (error/no data).
     async function detectTypeByFetch(url) {
       try {
         const resp = await fetch(url, { method: 'HEAD' });
@@ -282,7 +314,8 @@
         const ct = (resp.headers.get('content-type') || '').split(';')[0].trim();
         if (ct.startsWith('image/')) return 'image';
         if (ct.startsWith('video/')) return 'video';
-        return null;
+        // Response was OK but content-type isn't a recognised media type.
+        return 'unknown';
       } catch {
         return null;
       }
@@ -294,6 +327,7 @@
       // For extension-less URLs (e.g. /attachments/123/) use Content-Type from HEAD.
       // Falls back to loading in a hidden element when CORS or network prevents fetch.
       const ft = await detectTypeByFetch(url);
+      if (ft === 'unknown') return 'unknown'; // URL returns data but type is unrecognised — propagate immediately
       if (ft) return ft;
       return await probeMedia(url);
     }
@@ -367,6 +401,19 @@
       grid.insertBefore(createThumbCard(url, type, numberLabel), refCard);
     }
 
+    function addUrlToList(url) {
+      urlListSection.hidden = false;
+      const item = document.createElement('div');
+      item.className = 'url-list-item';
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = url;
+      item.appendChild(a);
+      urlList.appendChild(item);
+    }
+
     // ─── Modal ────────────────────────────────────────────────────────────────
 
     function openModal(url, type) {
@@ -413,6 +460,8 @@
 
       // Reset
       grid.innerHTML = '';
+      urlList.innerHTML = '';
+      urlListSection.hidden = true;
       abortScan      = false;
       scanning       = true;
       loadBtn.textContent = 'Stop';
@@ -429,7 +478,10 @@
 
       if (!parts) {
         // No number in URL — just check the single URL
-        if (initialType) {
+        if (initialType === 'unknown') {
+          addUrlToList(rawUrl);
+          setStatus('Type could not be determined — URL listed below.');
+        } else if (initialType) {
           addThumb(rawUrl, initialType);
           setStatus(`Found 1 item.`);
         } else {
@@ -452,7 +504,10 @@
           if (!u) break;
           setStatus(`<span class="spinner"></span>Scanning… found ${found + backItems.length} &nbsp;(trying #${n})`);
           const t = await detectType(u);
-          if (t) {
+          if (t === 'unknown') {
+            addUrlToList(u);
+            failures = 0;
+          } else if (t) {
             backItems.unshift({ url: u, type: t, num: n });
             failures = 0;
           } else {
@@ -473,7 +528,9 @@
       found += backItems.length;
 
       // Render initial URL (if valid)
-      if (initialType) {
+      if (initialType === 'unknown') {
+        addUrlToList(rawUrl);
+      } else if (initialType) {
         addThumb(rawUrl, initialType, parts.number);
         found++;
       }
@@ -487,7 +544,10 @@
           if (!u) break;
           setStatus(`<span class="spinner"></span>Scanning… found ${found} &nbsp;(trying #${n})`);
           const t = await detectType(u);
-          if (t) {
+          if (t === 'unknown') {
+            addUrlToList(u);
+            failures = 0;
+          } else if (t) {
             addThumb(u, t, n);
             found++;
             failures = 0;
