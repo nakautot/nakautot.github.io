@@ -273,9 +273,28 @@
       });
     }
 
+    // Try to detect media type via HTTP HEAD + Content-Type header.
+    // Works for same-origin and CORS-enabled servers; throws (caught) otherwise.
+    async function detectTypeByFetch(url) {
+      try {
+        const resp = await fetch(url, { method: 'HEAD' });
+        if (!resp.ok) return null;
+        const ct = (resp.headers.get('content-type') || '').split(';')[0].trim();
+        if (ct.startsWith('image/')) return 'image';
+        if (ct.startsWith('video/')) return 'video';
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
     async function detectType(url) {
       const t = typeFromExt(url);
       if (t) return t;
+      // For extension-less URLs (e.g. /attachments/123/) use Content-Type from HEAD.
+      // Falls back to loading in a hidden element when CORS or network prevents fetch.
+      const ft = await detectTypeByFetch(url);
+      if (ft) return ft;
       return await probeMedia(url);
     }
 
